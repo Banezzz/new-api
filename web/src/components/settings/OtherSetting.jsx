@@ -19,17 +19,13 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
-  Banner,
   Button,
   Col,
   Form,
   Row,
-  Modal,
-  Space,
   Card,
 } from '@douyinfe/semi-ui';
 import { API, showError, showSuccess, timestamp2string } from '../../helpers';
-import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
 import { StatusContext } from '../../context/Status';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
@@ -50,12 +46,7 @@ const OtherSetting = () => {
     HomePageContent: '',
   });
   let [loading, setLoading] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [statusState, statusDispatch] = useContext(StatusContext);
-  const [updateData, setUpdateData] = useState({
-    tag_name: '',
-    content: '',
-  });
+  const [statusState] = useContext(StatusContext);
 
   const updateOption = async (key, value) => {
     setLoading(true);
@@ -81,7 +72,6 @@ const OtherSetting = () => {
     HomePageContent: false,
     About: false,
     Footer: false,
-    CheckUpdate: false,
   });
   const handleInputChange = async (value, e) => {
     const name = e.target.id;
@@ -228,56 +218,6 @@ const OtherSetting = () => {
     }
   };
 
-  const checkUpdate = async () => {
-    try {
-      setLoadingInput((loadingInput) => ({
-        ...loadingInput,
-        CheckUpdate: true,
-      }));
-      // Use a CORS proxy to avoid direct cross-origin requests to GitHub API
-      // Option 1: Use a public CORS proxy service
-      // const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-      // const res = await API.get(
-      //   `${proxyUrl}https://api.github.com/repos/Calcium-Ion/new-api/releases/latest`,
-      // );
-
-      // Option 2: Use the JSON proxy approach which often works better with GitHub API
-      const res = await fetch(
-        'https://api.github.com/repos/Calcium-Ion/new-api/releases/latest',
-        {
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            // Adding User-Agent which is often required by GitHub API
-            'User-Agent': 'new-api-update-checker',
-          },
-        },
-      ).then((response) => response.json());
-
-      // Option 3: Use a local proxy endpoint
-      // Create a cached version of the response to avoid frequent GitHub API calls
-      // const res = await API.get('/api/status/github-latest-release');
-
-      const { tag_name, body } = res;
-      if (tag_name === statusState?.status?.version) {
-        showSuccess(`已是最新版本：${tag_name}`);
-      } else {
-        setUpdateData({
-          tag_name: tag_name,
-          content: marked.parse(body),
-        });
-        setShowUpdateModal(true);
-      }
-    } catch (error) {
-      console.error('Failed to check for updates:', error);
-      showError('检查更新失败，请稍后再试');
-    } finally {
-      setLoadingInput((loadingInput) => ({
-        ...loadingInput,
-        CheckUpdate: false,
-      }));
-    }
-  };
   const getOptions = async () => {
     const res = await API.get('/api/option/');
     const { success, message, data } = res.data;
@@ -300,14 +240,6 @@ const OtherSetting = () => {
     getOptions();
   }, []);
 
-  // Function to open GitHub release page
-  const openGitHubRelease = () => {
-    window.open(
-      `https://github.com/Calcium-Ion/new-api/releases/tag/${updateData.tag_name}`,
-      '_blank',
-    );
-  };
-
   const getStartTimeString = () => {
     const timestamp = statusState?.status?.start_time;
     return statusState.status ? timestamp2string(timestamp) : '';
@@ -324,25 +256,16 @@ const OtherSetting = () => {
           gap: '10px',
         }}
       >
-        {/* 版本信息 */}
+        {/* 系统信息 */}
         <Form>
           <Card>
             <Form.Section text={t('系统信息')}>
               <Row>
                 <Col span={16}>
-                  <Space>
-                    <Text>
-                      {t('当前版本')}：
-                      {statusState?.status?.version || t('未知')}
-                    </Text>
-                    <Button
-                      type='primary'
-                      onClick={checkUpdate}
-                      loading={loadingInput['CheckUpdate']}
-                    >
-                      {t('检查更新')}
-                    </Button>
-                  </Space>
+                  <Text>
+                    {t('当前版本')}：
+                    {statusState?.status?.version || t('未知')}
+                  </Text>
                 </Col>
               </Row>
               <Row>
@@ -473,16 +396,6 @@ const OtherSetting = () => {
               <Button onClick={submitAbout} loading={loadingInput['About']}>
                 {t('设置关于')}
               </Button>
-              {/*  */}
-              <Banner
-                fullMode={false}
-                type='info'
-                description={t(
-                  '移除 One API 的版权标识必须首先获得授权，项目维护需要花费大量精力，如果本项目对你有意义，请主动支持本项目',
-                )}
-                closeIcon={null}
-                style={{ marginTop: 15 }}
-              />
               <Form.Input
                 label={t('页脚')}
                 placeholder={t(
@@ -498,25 +411,6 @@ const OtherSetting = () => {
           </Card>
         </Form>
       </Col>
-      <Modal
-        title={t('新版本') + '：' + updateData.tag_name}
-        visible={showUpdateModal}
-        onCancel={() => setShowUpdateModal(false)}
-        footer={[
-          <Button
-            key='details'
-            type='primary'
-            onClick={() => {
-              setShowUpdateModal(false);
-              openGitHubRelease();
-            }}
-          >
-            {t('详情')}
-          </Button>,
-        ]}
-      >
-        <div dangerouslySetInnerHTML={{ __html: updateData.content }}></div>
-      </Modal>
     </Row>
   );
 };
