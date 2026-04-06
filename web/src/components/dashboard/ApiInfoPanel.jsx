@@ -18,13 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Card, Avatar, Tag, Divider, Empty } from '@douyinfe/semi-ui';
+import { Avatar, Tag, Divider, Empty } from '@douyinfe/semi-ui';
 import { Server, Gauge, ExternalLink } from 'lucide-react';
 import {
   IllustrationConstruction,
   IllustrationConstructionDark,
 } from '@douyinfe/semi-illustrations';
-import ScrollableContainer from '../common/ui/ScrollableContainer';
 
 const ApiInfoPanel = ({
   apiInfoData,
@@ -36,22 +35,24 @@ const ApiInfoPanel = ({
   t,
 }) => {
   return (
-    <Card
-      {...CARD_PROPS}
-      className='bg-gray-50 border-0 !rounded-2xl'
-      title={
+    <div
+      className='!rounded-xl border overflow-hidden'
+      style={{ borderColor: 'var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-0)' }}
+    >
+      {/* Header */}
+      <div className='px-4 py-3'>
         <div className={FLEX_CENTER_GAP2}>
           <Server size={16} />
           {t('API信息')}
         </div>
-      }
-      bodyStyle={{ padding: 0 }}
-    >
-      <ScrollableContainer maxHeight='24rem'>
+      </div>
+
+      {/* Content */}
+      <div className='px-2 pb-2'>
         {apiInfoData.length > 0 ? (
           apiInfoData.map((api) => (
             <React.Fragment key={api.id}>
-              <div className='flex p-2 hover:bg-white rounded-lg transition-colors cursor-pointer'>
+              <div className='flex p-2 hover:bg-semi-color-fill-0 rounded-lg transition-colors cursor-pointer'>
                 <div className='flex-shrink-0 mr-3'>
                   <Avatar size='extra-small' color={api.color}>
                     {api.route.substring(0, 2)}
@@ -59,7 +60,7 @@ const ApiInfoPanel = ({
                 </div>
                 <div className='flex-1'>
                   <div className='flex flex-wrap items-center justify-between mb-1 w-full gap-2'>
-                    <span className='text-sm font-medium text-gray-900 !font-bold break-all'>
+                    <span className='text-sm font-medium text-semi-color-text-0 !font-bold break-all'>
                       {api.route}
                     </span>
                     <div className='flex items-center gap-1 mt-1 lg:mt-0'>
@@ -93,7 +94,7 @@ const ApiInfoPanel = ({
                   >
                     {api.url}
                   </div>
-                  <div className='text-gray-500'>{api.description}</div>
+                  <div className='text-semi-color-text-2'>{api.description}</div>
                 </div>
               </div>
               <Divider />
@@ -111,8 +112,8 @@ const ApiInfoPanel = ({
             />
           </div>
         )}
-      </ScrollableContainer>
-    </Card>
+      </div>
+    </div>
   );
 };
 

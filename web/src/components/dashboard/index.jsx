@@ -165,48 +165,44 @@ const Dashboard = () => {
       <StatsCards
         groupedStatsData={groupedStatsData}
         loading={dashboardData.loading}
-        getTrendSpec={getTrendSpec}
-        CARD_PROPS={CARD_PROPS}
-        CHART_CONFIG={CHART_CONFIG}
       />
 
-      {/* API信息和图表面板 */}
+      {/* Charts - full width */}
       <div className='mb-4'>
-        <div
-          className={`grid grid-cols-1 gap-4 ${dashboardData.hasApiInfoPanel ? 'lg:grid-cols-4' : ''}`}
-        >
-          <ChartsPanel
-            activeChartTab={dashboardData.activeChartTab}
-            setActiveChartTab={dashboardData.setActiveChartTab}
-            spec_line={dashboardCharts.spec_line}
-            spec_model_line={dashboardCharts.spec_model_line}
-            spec_pie={dashboardCharts.spec_pie}
-            spec_rank_bar={dashboardCharts.spec_rank_bar}
-            CARD_PROPS={CARD_PROPS}
-            CHART_CONFIG={CHART_CONFIG}
-            FLEX_CENTER_GAP2={FLEX_CENTER_GAP2}
-            hasApiInfoPanel={dashboardData.hasApiInfoPanel}
-            t={dashboardData.t}
-          />
-
-          {dashboardData.hasApiInfoPanel && (
-            <ApiInfoPanel
-              apiInfoData={apiInfoData}
-              handleCopyUrl={(url) => handleCopyUrl(url, dashboardData.t)}
-              handleSpeedTest={handleSpeedTest}
-              CARD_PROPS={CARD_PROPS}
-              FLEX_CENTER_GAP2={FLEX_CENTER_GAP2}
-              ILLUSTRATION_SIZE={ILLUSTRATION_SIZE}
-              t={dashboardData.t}
-            />
-          )}
-        </div>
+        <ChartsPanel
+          activeChartTab={dashboardData.activeChartTab}
+          setActiveChartTab={dashboardData.setActiveChartTab}
+          spec_line={dashboardCharts.spec_line}
+          spec_model_line={dashboardCharts.spec_model_line}
+          spec_pie={dashboardCharts.spec_pie}
+          spec_rank_bar={dashboardCharts.spec_rank_bar}
+          CARD_PROPS={CARD_PROPS}
+          CHART_CONFIG={CHART_CONFIG}
+          FLEX_CENTER_GAP2={FLEX_CENTER_GAP2}
+          hasApiInfoPanel={dashboardData.hasApiInfoPanel}
+          t={dashboardData.t}
+        />
       </div>
 
-      {/* 系统公告和常见问答卡片 */}
+      {/* API Info - full width (moved from side column) */}
+      {dashboardData.hasApiInfoPanel && (
+        <div className='mb-4'>
+          <ApiInfoPanel
+            apiInfoData={apiInfoData}
+            handleCopyUrl={(url) => handleCopyUrl(url, dashboardData.t)}
+            handleSpeedTest={handleSpeedTest}
+            CARD_PROPS={CARD_PROPS}
+            FLEX_CENTER_GAP2={FLEX_CENTER_GAP2}
+            ILLUSTRATION_SIZE={ILLUSTRATION_SIZE}
+            t={dashboardData.t}
+          />
+        </div>
+      )}
+
+      {/* Bottom panels */}
       {dashboardData.hasInfoPanels && (
         <div className='mb-4'>
-          <div className='grid grid-cols-1 lg:grid-cols-4 gap-4'>
+          <div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
             {/* 公告卡片 */}
             {dashboardData.announcementsEnabled && (
               <AnnouncementsPanel

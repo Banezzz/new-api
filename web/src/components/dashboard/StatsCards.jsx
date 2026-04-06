@@ -18,97 +18,39 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Card, Avatar, Skeleton, Tag } from '@douyinfe/semi-ui';
-import { VChart } from '@visactor/react-vchart';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { Skeleton } from '@douyinfe/semi-ui';
 
 const StatsCards = ({
   groupedStatsData,
   loading,
-  getTrendSpec,
-  CARD_PROPS,
-  CHART_CONFIG,
 }) => {
-  const navigate = useNavigate();
-  const { t } = useTranslation();
+  // Flatten all groups into a single array of stat items
+  const allStats = groupedStatsData.flatMap((group) =>
+    group.items.map((item) => ({
+      label: item.title,
+      value: item.value,
+      onClick: item.onClick,
+    }))
+  );
+
+  if (allStats.length === 0) return null;
+
   return (
-    <div className='mb-4'>
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-        {groupedStatsData.map((group, idx) => (
-          <Card
-            key={idx}
-            {...CARD_PROPS}
-            className={`${group.color} border-0 !rounded-2xl w-full`}
-            title={group.title}
+    <div className="flex items-stretch border rounded-xl mb-4 overflow-hidden flex-wrap sm:flex-nowrap" style={{ borderColor: 'var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-0)' }}>
+      {allStats.map((stat, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <div className="w-px hidden sm:block" style={{ backgroundColor: 'var(--semi-color-border)' }} />}
+          <div
+            className="flex-1 px-4 py-3 min-w-0 basis-1/2 sm:basis-auto cursor-pointer hover:bg-semi-color-fill-0 transition-colors"
+            onClick={stat.onClick}
           >
-            <div className='space-y-4'>
-              {group.items.map((item, itemIdx) => (
-                <div
-                  key={itemIdx}
-                  className='flex items-center justify-between cursor-pointer'
-                  onClick={item.onClick}
-                >
-                  <div className='flex items-center'>
-                    <Avatar
-                      className='mr-3'
-                      size='small'
-                      color={item.avatarColor}
-                    >
-                      {item.icon}
-                    </Avatar>
-                    <div>
-                      <div className='text-xs text-gray-500'>{item.title}</div>
-                      <div className='text-lg font-semibold'>
-                        <Skeleton
-                          loading={loading}
-                          active
-                          placeholder={
-                            <Skeleton.Paragraph
-                              active
-                              rows={1}
-                              style={{
-                                width: '65px',
-                                height: '24px',
-                                marginTop: '4px',
-                              }}
-                            />
-                          }
-                        >
-                          {item.value}
-                        </Skeleton>
-                      </div>
-                    </div>
-                  </div>
-                  {item.title === t('当前余额') ? (
-                    <Tag
-                      color='white'
-                      shape='circle'
-                      size='large'
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/console/topup');
-                      }}
-                    >
-                      {t('充值')}
-                    </Tag>
-                  ) : (
-                    (loading ||
-                      (item.trendData && item.trendData.length > 0)) && (
-                      <div className='w-24 h-10'>
-                        <VChart
-                          spec={getTrendSpec(item.trendData, item.trendColor)}
-                          option={CHART_CONFIG}
-                        />
-                      </div>
-                    )
-                  )}
-                </div>
-              ))}
+            <div className="text-xs text-semi-color-text-2 mb-1 truncate">{stat.label}</div>
+            <div className="text-xl font-semibold text-semi-color-text-0 tabular-nums">
+              {loading ? <Skeleton.Title style={{ width: 60, height: 24 }} /> : stat.value}
             </div>
-          </Card>
-        ))}
-      </div>
+          </div>
+        </React.Fragment>
+      ))}
     </div>
   );
 };
