@@ -26,41 +26,83 @@ const sidebarEventTarget = new EventTarget();
 const SIDEBAR_REFRESH_EVENT = 'sidebar-refresh';
 
 export const DEFAULT_ADMIN_CONFIG = {
-  chat: {
-    enabled: true,
-    playground: true,
-    chat: true,
-  },
-  console: {
+  overview: {
     enabled: true,
     detail: true,
-    token: true,
-    log: true,
-    midjourney: true,
-    task: true,
   },
-  personal: {
-    enabled: true,
-    topup: true,
-    personal: true,
-  },
-  admin: {
+  services: {
     enabled: true,
     channel: true,
     models: true,
     deployment: true,
-    redemption: true,
-    user: true,
     subscription: true,
+  },
+  api: {
+    enabled: true,
+    playground: true,
+    chat: true,
+    token: true,
+  },
+  monitoring: {
+    enabled: true,
+    log: true,
+    midjourney: true,
+    task: true,
+  },
+  billing: {
+    enabled: true,
+    topup: true,
+    redemption: true,
+  },
+  account: {
+    enabled: true,
+    personal: true,
+    user: true,
     setting: true,
   },
 };
 
 const deepClone = (value) => JSON.parse(JSON.stringify(value));
 
-export const mergeAdminConfig = (savedConfig) => {
+export const mergeAdminConfig = (inputSavedConfig) => {
   const merged = deepClone(DEFAULT_ADMIN_CONFIG);
-  if (!savedConfig || typeof savedConfig !== 'object') return merged;
+  if (!inputSavedConfig || typeof inputSavedConfig !== 'object') return merged;
+
+  // Backward compatibility: map old 4-section keys to new 6-section keys
+  const OLD_TO_NEW_MAP = {
+    chat: { playground: 'api', chat: 'api' },
+    console: { detail: 'overview', token: 'api', log: 'monitoring', midjourney: 'monitoring', task: 'monitoring' },
+    personal: { topup: 'billing', personal: 'account' },
+    admin: { channel: 'services', models: 'services', deployment: 'services', subscription: 'services', redemption: 'billing', user: 'account', setting: 'account' },
+  };
+
+  // If savedConfig uses old keys, migrate
+  const migratedConfig = {};
+  let needsMigration = false;
+  for (const oldSection of ['chat', 'console', 'personal', 'admin']) {
+    if (inputSavedConfig[oldSection] && !inputSavedConfig.overview && !inputSavedConfig.services) {
+      needsMigration = true;
+      break;
+    }
+  }
+
+  let savedConfig = inputSavedConfig;
+
+  if (needsMigration) {
+    for (const [oldSection, moduleMap] of Object.entries(OLD_TO_NEW_MAP)) {
+      const oldSectionConfig = inputSavedConfig[oldSection];
+      if (!oldSectionConfig) continue;
+      for (const [moduleKey, newSection] of Object.entries(moduleMap)) {
+        if (!migratedConfig[newSection]) {
+          migratedConfig[newSection] = { enabled: oldSectionConfig.enabled !== false };
+        }
+        if (oldSectionConfig[moduleKey] !== undefined) {
+          migratedConfig[newSection][moduleKey] = oldSectionConfig[moduleKey];
+        }
+      }
+    }
+    savedConfig = migratedConfig;
+  }
 
   for (const [sectionKey, sectionConfig] of Object.entries(savedConfig)) {
     if (!sectionConfig || typeof sectionConfig !== 'object') continue;
@@ -113,7 +155,7 @@ export const useSidebar = () => {
         setLoading(true);
       }
 
-      const res = await API.get('/api/user/self');
+      const res = await API.get('/api/user/self', { skipErrorHandler: true });
       if (res.data.success && res.data.data.sidebar_modules) {
         let config;
         // 检查sidebar_modules是字符串还是对象
