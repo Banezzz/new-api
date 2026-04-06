@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useState } from 'react';
-import { Card, Divider, Typography, Button } from '@douyinfe/semi-ui';
+import { Divider, Typography, Button } from '@douyinfe/semi-ui';
 import PropTypes from 'prop-types';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { IconEyeOpened, IconEyeClosed } from '@douyinfe/semi-icons';
@@ -52,7 +52,7 @@ const CardPro = ({
   actionsArea,
   searchArea,
   paginationArea, // 新增分页区域
-  // 卡片属性
+  // 卡片属性 (kept for API compatibility, no longer used by div)
   shadows = '',
   bordered = true,
   // 自定义样式
@@ -159,17 +159,30 @@ const CardPro = ({
   const footerContent = renderFooter();
 
   return (
-    <Card
-      className={`table-scroll-card !rounded-2xl ${className}`}
-      title={headerContent}
-      footer={footerContent}
-      shadows={shadows}
-      bordered={bordered}
+    <div
+      className={`table-scroll-card !rounded-xl ${className}`}
       style={style}
       {...props}
     >
-      {children}
-    </Card>
+      {/* Header/toolbar area */}
+      {headerContent && (
+        <div className="px-4 py-3">
+          {headerContent}
+        </div>
+      )}
+
+      {/* Table content */}
+      <div className="flex-1 overflow-auto">
+        {children}
+      </div>
+
+      {/* Sticky footer pagination */}
+      {footerContent && (
+        <div className="sticky bottom-0 bg-semi-color-bg-0 px-4 py-2 border-t" style={{ borderColor: 'var(--semi-color-border)' }}>
+          {footerContent}
+        </div>
+      )}
+    </div>
   );
 };
 
