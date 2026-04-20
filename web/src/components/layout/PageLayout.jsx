@@ -24,6 +24,7 @@ import NoticeModal from './NoticeModal';
 import App from '../../App';
 import FooterBar from './Footer';
 import { ToastContainer } from 'react-toastify';
+import ErrorBoundary from '../common/ErrorBoundary';
 import React, { useContext, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/common/useIsMobile';
 import { useHeaderBar } from '../../hooks/common/useHeaderBar';
@@ -350,7 +351,9 @@ const PageLayout = () => {
             paddingBottom: isMobile && showShell ? '72px' : '0',
           }}
         >
-          <App />
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
           {/* Footer inside scroll area so it's reachable */}
           {!shouldHideFooter && <FooterBar />}
         </div>

@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Avatar, Tag, Divider, Empty } from '@douyinfe/semi-ui';
-import { Server, Gauge, ExternalLink } from 'lucide-react';
+import { Server, Gauge, ExternalLink, Copy } from 'lucide-react';
 import {
   IllustrationConstruction,
   IllustrationConstructionDark,
@@ -29,7 +29,6 @@ const ApiInfoPanel = ({
   apiInfoData,
   handleCopyUrl,
   handleSpeedTest,
-  CARD_PROPS,
   FLEX_CENTER_GAP2,
   ILLUSTRATION_SIZE,
   t,

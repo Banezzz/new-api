@@ -29,10 +29,11 @@ const ChartsPanel = ({
   spec_model_line,
   spec_pie,
   spec_rank_bar,
-  CARD_PROPS,
+  spec_user_rank,
+  spec_user_trend,
+  isAdminUser,
   CHART_CONFIG,
   FLEX_CENTER_GAP2,
-  hasApiInfoPanel,
   t,
 }) => {
   return (
@@ -52,9 +53,15 @@ const ChartsPanel = ({
           onChange={setActiveChartTab}
         >
           <TabPane tab={<span>{t('消耗分布')}</span>} itemKey='1' />
-          <TabPane tab={<span>{t('消耗趋势')}</span>} itemKey='2' />
+          <TabPane tab={<span>{t('调用趋势')}</span>} itemKey='2' />
           <TabPane tab={<span>{t('调用次数分布')}</span>} itemKey='3' />
           <TabPane tab={<span>{t('调用次数排行')}</span>} itemKey='4' />
+          {isAdminUser && (
+            <TabPane tab={<span>{t('用户消耗排行')}</span>} itemKey='5' />
+          )}
+          {isAdminUser && (
+            <TabPane tab={<span>{t('用户消耗趋势')}</span>} itemKey='6' />
+          )}
         </Tabs>
       </div>
 
@@ -71,6 +78,12 @@ const ChartsPanel = ({
         )}
         {activeChartTab === '4' && (
           <VChart spec={spec_rank_bar} option={CHART_CONFIG} />
+        )}
+        {activeChartTab === '5' && isAdminUser && (
+          <VChart spec={spec_user_rank} option={CHART_CONFIG} />
+        )}
+        {activeChartTab === '6' && isAdminUser && (
+          <VChart spec={spec_user_trend} option={CHART_CONFIG} />
         )}
       </div>
     </div>

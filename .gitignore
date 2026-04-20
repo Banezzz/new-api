@@ -30,3 +30,4 @@ data/
 .gocache-temp
 .gopath
 new-api-server
+token_estimator_test.go
