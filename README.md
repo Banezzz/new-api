@@ -168,6 +168,7 @@ docker run --name new-api -d --restart always \
 | Category | Link |
 |------|------|
 | 🚀 Deployment Guide | [Installation Documentation](https://docs.newapi.pro/en/docs/installation) |
+| 🔄 Rolling Rebuild Best Practice | [Stream-friendly rolling rebuild](./docs/installation/Hot-Reload-Best-Practice.md) |
 | ⚙️ Environment Configuration | [Environment Variables](https://docs.newapi.pro/en/docs/installation/config-maintenance/environment-variables) |
 | 📡 API Documentation | [API Documentation](https://docs.newapi.pro/en/docs/api) |
 | ❓ FAQ | [FAQ](https://docs.newapi.pro/en/docs/support/faq) |
@@ -375,6 +376,8 @@ docker run --name new-api -d --restart always \
 > - You can also use absolute path, e.g.: `/your/custom/path:/data`
 
 </details>
+
+> **🔄 Rolling rebuild best practice:** If you run `new-api` as an API relay and want to minimize interruption to streaming requests, see [Hot Reload and Rolling Rebuild Best Practices](./docs/installation/Hot-Reload-Best-Practice.md)
 
 <details>
 <summary><strong>Method 3: BaoTa Panel</strong></summary>
