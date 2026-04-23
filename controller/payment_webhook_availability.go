@@ -5,6 +5,7 @@ import (
 
 	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
+	"github.com/QuantumNous/new-api/setting/system_setting"
 )
 
 func isStripeTopUpEnabled() bool {
@@ -83,6 +84,31 @@ func isWaffoPancakeWebhookConfigured() bool {
 
 func isWaffoPancakeWebhookEnabled() bool {
 	return isWaffoPancakeTopUpEnabled()
+}
+
+func isInfiniTopUpEnabled() bool {
+	if !setting.InfiniEnabled {
+		return false
+	}
+
+	return strings.TrimSpace(setting.InfiniKeyId) != "" &&
+		strings.TrimSpace(setting.InfiniSecretKey) != "" &&
+		isInfiniWebhookConfigured() &&
+		isInfiniCallbackAddressConfigured() &&
+		len(setting.GetInfiniPayMethods()) > 0
+}
+
+func isInfiniWebhookConfigured() bool {
+	return strings.TrimSpace(setting.InfiniWebhookSecret) != ""
+}
+
+func isInfiniCallbackAddressConfigured() bool {
+	return strings.TrimSpace(operation_setting.CustomCallbackAddress) != "" ||
+		strings.TrimSpace(system_setting.ServerAddress) != ""
+}
+
+func isInfiniWebhookEnabled() bool {
+	return isInfiniTopUpEnabled()
 }
 
 func isEpayTopUpEnabled() bool {

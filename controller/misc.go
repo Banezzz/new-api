@@ -89,9 +89,13 @@ func GetStatus(c *gin.Context) {
 		"self_use_mode_enabled":         operation_setting.SelfUseModeEnabled,
 		"default_use_auto_group":        setting.DefaultUseAutoGroup,
 
-		"usd_exchange_rate": operation_setting.USDExchangeRate,
-		"price":             operation_setting.Price,
-		"stripe_unit_price": setting.StripeUnitPrice,
+		"usd_exchange_rate":   operation_setting.USDExchangeRate,
+		"price":               operation_setting.Price,
+		"stripe_unit_price":   setting.StripeUnitPrice,
+		"enable_online_topup": isEpayTopUpEnabled(),
+		"enable_stripe_topup": isStripeTopUpEnabled(),
+		"enable_creem_topup":  isCreemTopUpEnabled(),
+		"enable_infini_topup": isInfiniTopUpEnabled(),
 
 		// 面板启用开关
 		"api_info_enabled":      cs.ApiInfoEnabled,
