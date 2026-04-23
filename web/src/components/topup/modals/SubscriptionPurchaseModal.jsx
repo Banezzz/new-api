@@ -48,14 +48,19 @@ const SubscriptionPurchaseModal = ({
   paying,
   selectedEpayMethod,
   setSelectedEpayMethod,
+  selectedInfiniMethod,
+  setSelectedInfiniMethod,
   epayMethods = [],
+  infiniMethods = [],
   enableOnlineTopUp = false,
   enableStripeTopUp = false,
   enableCreemTopUp = false,
+  enableInfiniTopUp = false,
   purchaseLimitInfo = null,
   onPayStripe,
   onPayCreem,
   onPayEpay,
+  onPayInfini,
 }) => {
   const plan = selectedPlan?.plan;
   const totalAmount = Number(plan?.total_amount || 0);
@@ -69,7 +74,8 @@ const SubscriptionPurchaseModal = ({
   const hasStripe = enableStripeTopUp && !!plan?.stripe_price_id;
   const hasCreem = enableCreemTopUp && !!plan?.creem_product_id;
   const hasEpay = enableOnlineTopUp && epayMethods.length > 0;
-  const hasAnyPayment = hasStripe || hasCreem || hasEpay;
+  const hasInfini = enableInfiniTopUp && infiniMethods.length > 0;
+  const hasAnyPayment = hasStripe || hasCreem || hasEpay || hasInfini;
   const purchaseLimit = Number(purchaseLimitInfo?.limit || 0);
   const purchaseCount = Number(purchaseLimitInfo?.count || 0);
   const purchaseLimitReached =
@@ -212,6 +218,32 @@ const SubscriptionPurchaseModal = ({
                       Creem
                     </Button>
                   )}
+                </div>
+              )}
+
+              {hasInfini && (
+                <div className='flex gap-2'>
+                  <Select
+                    value={selectedInfiniMethod}
+                    onChange={setSelectedInfiniMethod}
+                    style={{ flex: 1 }}
+                    size='default'
+                    placeholder={t('选择支付方式')}
+                    optionList={infiniMethods.map((m) => ({
+                      value: m.type,
+                      label: m.name || m.type,
+                    }))}
+                    disabled={purchaseLimitReached}
+                  />
+                  <Button
+                    theme='solid'
+                    type='primary'
+                    onClick={onPayInfini}
+                    loading={paying}
+                    disabled={!selectedInfiniMethod || purchaseLimitReached}
+                  >
+                    Infini
+                  </Button>
                 </div>
               )}
 

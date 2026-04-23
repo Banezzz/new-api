@@ -23,6 +23,7 @@ import SettingsGeneralPayment from '../../pages/Setting/Payment/SettingsGeneralP
 import SettingsPaymentGateway from '../../pages/Setting/Payment/SettingsPaymentGateway';
 import SettingsPaymentGatewayStripe from '../../pages/Setting/Payment/SettingsPaymentGatewayStripe';
 import SettingsPaymentGatewayCreem from '../../pages/Setting/Payment/SettingsPaymentGatewayCreem';
+import SettingsPaymentGatewayInfini from '../../pages/Setting/Payment/SettingsPaymentGatewayInfini';
 import SettingsPaymentGatewayWaffo from '../../pages/Setting/Payment/SettingsPaymentGatewayWaffo';
 import SettingsPaymentGatewayWaffoPancake from '../../pages/Setting/Payment/SettingsPaymentGatewayWaffoPancake';
 import { API, showError, toBoolean } from '../../helpers';
@@ -49,6 +50,20 @@ const PaymentSetting = () => {
     StripeUnitPrice: 8.0,
     StripeMinTopUp: 1,
     StripePromotionCodesEnabled: false,
+
+    InfiniEnabled: false,
+    InfiniSandbox: false,
+    InfiniBaseURL: '',
+    InfiniKeyId: '',
+    InfiniSecretKey: '',
+    InfiniWebhookSecret: '',
+    InfiniMerchantAlias: '',
+    InfiniSuccessURL: '',
+    InfiniFailureURL: '',
+    InfiniUnitPrice: 1.0,
+    InfiniMinTopUp: 1,
+    InfiniOrderTTLSeconds: 0,
+    InfiniPayMethods: '',
 
     WaffoPancakeEnabled: false,
     WaffoPancakeSandbox: false,
@@ -104,10 +119,24 @@ const PaymentSetting = () => {
               newInputs['AmountDiscount'] = item.value;
             }
             break;
+          case 'InfiniPayMethods':
+            try {
+              newInputs[item.key] = JSON.stringify(
+                JSON.parse(item.value),
+                null,
+                2,
+              );
+            } catch (error) {
+              newInputs[item.key] = item.value;
+            }
+            break;
           case 'Price':
           case 'MinTopUp':
           case 'StripeUnitPrice':
           case 'StripeMinTopUp':
+          case 'InfiniUnitPrice':
+          case 'InfiniMinTopUp':
+          case 'InfiniOrderTTLSeconds':
           case 'WaffoPancakeUnitPrice':
           case 'WaffoPancakeMinTopUp':
             newInputs[item.key] = parseFloat(item.value);
@@ -121,6 +150,10 @@ const PaymentSetting = () => {
             newInputs[item.key] = item.value;
             break;
           case 'WaffoPancakeSandbox':
+            newInputs[item.key] = toBoolean(item.value);
+            break;
+          case 'InfiniEnabled':
+          case 'InfiniSandbox':
             newInputs[item.key] = toBoolean(item.value);
             break;
           default:
@@ -186,6 +219,13 @@ const PaymentSetting = () => {
             </Tabs.TabPane>
             <Tabs.TabPane tab={t('Creem 设置')} itemKey='creem'>
               <SettingsPaymentGatewayCreem
+                options={inputs}
+                refresh={onRefresh}
+                hideSectionTitle
+              />
+            </Tabs.TabPane>
+            <Tabs.TabPane tab={t('Infini 设置')} itemKey='infini'>
+              <SettingsPaymentGatewayInfini
                 options={inputs}
                 refresh={onRefresh}
                 hideSectionTitle

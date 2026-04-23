@@ -34,6 +34,7 @@ const SubscriptionsPage = () => {
   const isMobile = useIsMobile();
   const [statusState] = useContext(StatusContext);
   const enableEpay = !!statusState?.status?.enable_online_topup;
+  const enableInfini = !!statusState?.status?.enable_infini_topup;
 
   const {
     showEdit,
@@ -75,7 +76,9 @@ const SubscriptionsPage = () => {
             </div>
             <Banner
               type='info'
-              description={t('Stripe/Creem 需在第三方平台创建商品并填入 ID')}
+              description={t(
+                'Stripe/Creem 需在第三方平台创建商品并填入 ID，Infini/易支付为全局支付网关，无需逐套餐配置商品 ID。',
+              )}
               closeIcon={null}
               // Mobile: banner below; Desktop: banner right
               className='!rounded-lg order-2 md:order-1'
@@ -94,7 +97,11 @@ const SubscriptionsPage = () => {
         })}
         t={t}
       >
-        <SubscriptionsTable {...subscriptionsData} enableEpay={enableEpay} />
+        <SubscriptionsTable
+          {...subscriptionsData}
+          enableEpay={enableEpay}
+          enableInfini={enableInfini}
+        />
       </CardPro>
     </>
   );

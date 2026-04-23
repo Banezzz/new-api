@@ -44,8 +44,18 @@ const { Text } = Typography;
 // 过滤易支付方式
 function getEpayMethods(payMethods = []) {
   return (payMethods || []).filter(
-    (m) => m?.type && m.type !== 'stripe' && m.type !== 'creem',
+    (m) =>
+      m?.type &&
+      m.type !== 'stripe' &&
+      m.type !== 'creem' &&
+      m.type !== 'waffo_pancake' &&
+      !m.type.startsWith('waffo:') &&
+      !m.type.startsWith('infini'),
   );
+}
+
+function getInfiniMethods(payMethods = []) {
+  return (payMethods || []).filter((m) => m?.type && m.type.startsWith('infini'));
 }
 
 // 提交易支付表单
@@ -77,6 +87,7 @@ const SubscriptionPlansCard = ({
   enableOnlineTopUp = false,
   enableStripeTopUp = false,
   enableCreemTopUp = false,
+  enableInfiniTopUp = false,
   billingPreference,
   onChangeBillingPreference,
   activeSubscriptions = [],
@@ -88,13 +99,19 @@ const SubscriptionPlansCard = ({
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [paying, setPaying] = useState(false);
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('');
+  const [selectedInfiniMethod, setSelectedInfiniMethod] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   const epayMethods = useMemo(() => getEpayMethods(payMethods), [payMethods]);
+  const infiniMethods = useMemo(
+    () => getInfiniMethods(payMethods),
+    [payMethods],
+  );
 
   const openBuy = (p) => {
     setSelectedPlan(p);
     setSelectedEpayMethod(epayMethods?.[0]?.type || '');
+    setSelectedInfiniMethod(infiniMethods?.[0]?.type || 'infini');
     setOpen(true);
   };
 
@@ -183,6 +200,35 @@ const SubscriptionPlansCard = ({
       if (res.data?.message === 'success') {
         submitEpayForm({ url: res.data.url, params: res.data.data });
         showSuccess(t('已发起支付'));
+        closeBuy();
+      } else {
+        const errorMsg =
+          typeof res.data?.data === 'string'
+            ? res.data.data
+            : res.data?.message || t('支付失败');
+        showError(errorMsg);
+      }
+    } catch (e) {
+      showError(t('支付请求失败'));
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const payInfini = async () => {
+    if (!selectedInfiniMethod) {
+      showError(t('请选择支付方式'));
+      return;
+    }
+    setPaying(true);
+    try {
+      const res = await API.post('/api/subscription/infini/pay', {
+        plan_id: selectedPlan.plan.id,
+        payment_method: selectedInfiniMethod,
+      });
+      if (res.data?.message === 'success') {
+        window.open(res.data.data?.checkout_url, '_blank');
+        showSuccess(t('已打开支付页面'));
         closeBuy();
       } else {
         const errorMsg =
@@ -673,6 +719,10 @@ const SubscriptionPlansCard = ({
         enableOnlineTopUp={enableOnlineTopUp}
         enableStripeTopUp={enableStripeTopUp}
         enableCreemTopUp={enableCreemTopUp}
+        infiniMethods={infiniMethods}
+        enableInfiniTopUp={enableInfiniTopUp}
+        selectedInfiniMethod={selectedInfiniMethod}
+        setSelectedInfiniMethod={setSelectedInfiniMethod}
         purchaseLimitInfo={
           selectedPlan?.plan?.id
             ? {
@@ -684,6 +734,7 @@ const SubscriptionPlansCard = ({
         onPayStripe={payStripe}
         onPayCreem={payCreem}
         onPayEpay={payEpay}
+        onPayInfini={payInfini}
       />
     </>
   );

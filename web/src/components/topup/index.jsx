@@ -63,6 +63,9 @@ const TopUp = () => {
   const [enableStripeTopUp, setEnableStripeTopUp] = useState(
     statusState?.status?.enable_stripe_topup || false,
   );
+  const [enableInfiniTopUp, setEnableInfiniTopUp] = useState(
+    statusState?.status?.enable_infini_topup || false,
+  );
   const [statusLoading, setStatusLoading] = useState(true);
 
   // Creem 相关状态
@@ -138,6 +141,9 @@ const TopUp = () => {
     if (payment === 'stripe') {
       return getStripeAmount(value);
     }
+    if (typeof payment === 'string' && payment.startsWith('infini')) {
+      return getInfiniAmount(value, payment);
+    }
     if (payment === 'waffo_pancake') {
       return getWaffoPancakeAmount(value);
     }
@@ -197,6 +203,11 @@ const TopUp = () => {
         showError(t('管理员未开启Stripe充值！'));
         return;
       }
+    } else if (payment.startsWith('infini')) {
+      if (!enableInfiniTopUp) {
+        showError(t('管理员未开启 Infini 充值！'));
+        return;
+      }
     } else if (payment === 'waffo_pancake') {
       if (!enableWaffoPancakeTopUp) {
         showError(t('管理员未开启 Waffo Pancake 充值！'));
@@ -249,6 +260,30 @@ const TopUp = () => {
       setConfirmLoading(true);
       try {
         await waffoTopUp(Number.isFinite(payMethodIndex) ? payMethodIndex : 0);
+      } finally {
+        setOpen(false);
+        setConfirmLoading(false);
+      }
+      return;
+    }
+
+    if (payWay.startsWith('infini')) {
+      setConfirmLoading(true);
+      try {
+        if (amount === 0) {
+          await getInfiniAmount(undefined, payWay);
+        }
+        const res = await API.post('/api/user/infini/pay', {
+          amount: parseInt(topUpCount),
+          payment_method: payWay,
+        });
+        if (res?.data?.message === 'success') {
+          window.open(res.data.data?.checkout_url, '_blank');
+        } else {
+          showError(res?.data?.data || t('支付失败'));
+        }
+      } catch (error) {
+        showError(t('支付请求失败'));
       } finally {
         setOpen(false);
         setConfirmLoading(false);
@@ -636,6 +671,7 @@ const TopUp = () => {
           const enableStripeTopUp = data.enable_stripe_topup || false;
           const enableOnlineTopUp = data.enable_online_topup || false;
           const enableCreemTopUp = data.enable_creem_topup || false;
+          const enableInfiniTopUp = data.enable_infini_topup || false;
           const enableWaffoTopUp = data.enable_waffo_topup || false;
           const enableWaffoPancakeTopUp =
             data.enable_waffo_pancake_topup || false;
@@ -643,6 +679,8 @@ const TopUp = () => {
             ? data.min_topup
             : enableStripeTopUp
               ? data.stripe_min_topup
+              : enableInfiniTopUp
+                ? data.infini_min_topup
               : enableWaffoTopUp
                 ? data.waffo_min_topup
                 : enableWaffoPancakeTopUp
@@ -651,6 +689,7 @@ const TopUp = () => {
           setEnableOnlineTopUp(enableOnlineTopUp);
           setEnableStripeTopUp(enableStripeTopUp);
           setEnableCreemTopUp(enableCreemTopUp);
+          setEnableInfiniTopUp(enableInfiniTopUp);
           setEnableWaffoTopUp(enableWaffoTopUp);
           setWaffoPayMethods(data.waffo_pay_methods || []);
           setWaffoMinTopUp(data.waffo_min_topup || 1);
@@ -828,6 +867,34 @@ const TopUp = () => {
     }
   };
 
+  const getInfiniAmount = async (value, paymentMethod) => {
+    if (value === undefined) {
+      value = topUpCount;
+    }
+    setAmountLoading(true);
+    try {
+      const res = await API.post('/api/user/infini/amount', {
+        amount: parseFloat(value),
+        payment_method: paymentMethod || payWay || 'infini',
+      });
+      if (res !== undefined) {
+        const { message, data } = res.data;
+        if (message === 'success') {
+          setAmount(parseFloat(data));
+        } else {
+          setAmount(0);
+          Toast.error({ content: '错误：' + data, id: 'getAmount' });
+        }
+      } else {
+        showError(res);
+      }
+    } catch (err) {
+      // amount fetch failed silently
+    } finally {
+      setAmountLoading(false);
+    }
+  };
+
   const handleCancel = () => {
     setOpen(false);
   };
@@ -946,6 +1013,7 @@ const TopUp = () => {
           t={t}
           enableOnlineTopUp={enableOnlineTopUp}
           enableStripeTopUp={enableStripeTopUp}
+          enableInfiniTopUp={enableInfiniTopUp}
           enableCreemTopUp={enableCreemTopUp}
           creemProducts={creemProducts}
           creemPreTopUp={creemPreTopUp}

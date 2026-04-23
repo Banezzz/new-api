@@ -55,6 +55,7 @@ const RechargeCard = ({
   t,
   enableOnlineTopUp,
   enableStripeTopUp,
+  enableInfiniTopUp,
   enableCreemTopUp,
   creemProducts,
   creemPreTopUp,
@@ -228,6 +229,7 @@ const RechargeCard = ({
           </div>
         ) : enableOnlineTopUp ||
           enableStripeTopUp ||
+          enableInfiniTopUp ||
           enableCreemTopUp ||
           enableWaffoTopUp ||
           enableWaffoPancakeTopUp ? (
@@ -238,6 +240,7 @@ const RechargeCard = ({
             <div className='space-y-6'>
               {(enableOnlineTopUp ||
                 enableStripeTopUp ||
+                enableInfiniTopUp ||
                 enableWaffoTopUp ||
                 enableWaffoPancakeTopUp) && (
                 <Row gutter={12}>
@@ -248,6 +251,7 @@ const RechargeCard = ({
                       disabled={
                         !enableOnlineTopUp &&
                         !enableStripeTopUp &&
+                        !enableInfiniTopUp &&
                         !enableWaffoTopUp &&
                         !enableWaffoPancakeTopUp
                       }
@@ -313,14 +317,19 @@ const RechargeCard = ({
                             const isWaffo =
                               typeof payMethod.type === 'string' &&
                               payMethod.type.startsWith('waffo:');
+                            const isInfini =
+                              typeof payMethod.type === 'string' &&
+                              payMethod.type.startsWith('infini');
                             const isWaffoPancake =
                               payMethod.type === 'waffo_pancake';
                             const disabled =
                               (!enableOnlineTopUp &&
                                 !isStripe &&
+                                !isInfini &&
                                 !isWaffo &&
                                 !isWaffoPancake) ||
                               (!enableStripeTopUp && isStripe) ||
+                              (!enableInfiniTopUp && isInfini) ||
                               (!enableWaffoTopUp && isWaffo) ||
                               (!enableWaffoPancakeTopUp && isWaffoPancake) ||
                               minTopupVal > Number(topUpCount || 0);
@@ -351,6 +360,14 @@ const RechargeCard = ({
                                         height: 18,
                                         objectFit: 'contain',
                                       }}
+                                    />
+                                  ) : isInfini ? (
+                                    <CreditCard
+                                      size={18}
+                                      color={
+                                        payMethod.color ||
+                                        'rgba(var(--semi-indigo-5), 1)'
+                                      }
                                     />
                                   ) : payMethod.type === 'waffo_pancake' ? (
                                     <CreditCard
@@ -663,6 +680,7 @@ const RechargeCard = ({
                 enableOnlineTopUp={enableOnlineTopUp}
                 enableStripeTopUp={enableStripeTopUp}
                 enableCreemTopUp={enableCreemTopUp}
+                enableInfiniTopUp={enableInfiniTopUp}
                 billingPreference={billingPreference}
                 onChangeBillingPreference={onChangeBillingPreference}
                 activeSubscriptions={activeSubscriptions}
