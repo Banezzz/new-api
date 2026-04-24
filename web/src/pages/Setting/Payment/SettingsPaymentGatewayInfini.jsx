@@ -374,10 +374,10 @@ export default function SettingsPaymentGatewayInfini(props) {
                 label={t('Infini 支付方式配置')}
                 autosize
                 placeholder={t(
-                  '为一个 JSON 数组，例如：[{"name":"Infini","type":"infini","pay_methods":[1,2],"color":"rgba(var(--semi-indigo-5), 1)"}]',
+                  '为一个 JSON 数组，例如：[{"name":"Infini","type":"infini","color":"rgba(var(--semi-indigo-5), 1)"}]',
                 )}
                 extraText={t(
-                  'type 建议使用 infini / infini:crypto / infini:card；pay_methods 使用 [1] 加密货币、[2] 卡支付、[1,2] 同时支持。',
+                  '省略 pay_methods 会继承 Infini 后台支付方式；需要限制时再填写 [1] 加密货币、[2] 卡支付等 Infini 支持的枚举。',
                 )}
               />
             </Col>

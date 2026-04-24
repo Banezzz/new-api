@@ -117,12 +117,12 @@ func resolveInfiniPayMethodConfig(paymentMethod string) (*setting.InfiniPayMetho
 
 func sanitizeInfiniPayMethods(methods []int) []int {
 	if len(methods) == 0 {
-		return []int{1, 2}
+		return nil
 	}
 	result := make([]int, 0, len(methods))
 	seen := make(map[int]struct{}, len(methods))
 	for _, method := range methods {
-		if method != 1 && method != 2 {
+		if method <= 0 {
 			continue
 		}
 		if _, ok := seen[method]; ok {
@@ -132,9 +132,39 @@ func sanitizeInfiniPayMethods(methods []int) []int {
 		result = append(result, method)
 	}
 	if len(result) == 0 {
-		return []int{1, 2}
+		return nil
 	}
 	return result
+}
+
+func resolveInfiniOrderPayMethods(method *setting.InfiniPayMethod) []int {
+	if method == nil {
+		return nil
+	}
+	payMethods := sanitizeInfiniPayMethods(method.PayMethods)
+	if method.Type == model.PaymentMethodInfini && isLegacyInfiniDefaultPayMethods(payMethods) {
+		return nil
+	}
+	return payMethods
+}
+
+func isLegacyInfiniDefaultPayMethods(methods []int) bool {
+	if len(methods) != 2 {
+		return false
+	}
+	hasCrypto := false
+	hasCard := false
+	for _, method := range methods {
+		switch method {
+		case 1:
+			hasCrypto = true
+		case 2:
+			hasCard = true
+		default:
+			return false
+		}
+	}
+	return hasCrypto && hasCard
 }
 
 func RequestInfiniAmount(c *gin.Context) {
@@ -247,7 +277,7 @@ func RequestInfiniPay(c *gin.Context) {
 		MerchantAlias:   strings.TrimSpace(setting.InfiniMerchantAlias),
 		SuccessURL:      successURL,
 		FailureURL:      failureURL,
-		PayMethods:      sanitizeInfiniPayMethods(payMethod.PayMethods),
+		PayMethods:      resolveInfiniOrderPayMethods(payMethod),
 	}
 	if setting.InfiniOrderTTLSeconds > 0 {
 		createReq.ExpiresIn = setting.InfiniOrderTTLSeconds

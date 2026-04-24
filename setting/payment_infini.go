@@ -26,10 +26,9 @@ var (
 
 var defaultInfiniPayMethods = []InfiniPayMethod{
 	{
-		Name:       "Infini",
-		Type:       "infini",
-		Color:      "rgba(var(--semi-indigo-5), 1)",
-		PayMethods: []int{1, 2},
+		Name:  "Infini",
+		Type:  "infini",
+		Color: "rgba(var(--semi-indigo-5), 1)",
 	},
 }
 

@@ -231,7 +231,6 @@ Webhook Secret 的处理方式：
   {
     "name": "Infini",
     "type": "infini",
-    "pay_methods": [1, 2],
     "color": "rgba(var(--semi-indigo-5), 1)"
   },
   {
@@ -249,9 +248,10 @@ Webhook Secret 的处理方式：
 
 含义：
 
+- `pay_methods` 省略或留空表示继承 Infini 商户后台配置，适合展示 Pay with Crypto、Binance Pay、Infini Business Pay 等后台已启用方式
 - `pay_methods: [1]` 表示加密货币
 - `pay_methods: [2]` 表示卡支付
-- `pay_methods: [1, 2]` 表示同时支持
+- `pay_methods: [1, 2]` 表示仅按 Infini 当前 API 文档限制为加密货币和卡支付
 
 ## 6. 哪些配置是系统内完成，哪些是外部完成
 

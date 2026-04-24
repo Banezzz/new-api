@@ -120,7 +120,7 @@ func SubscriptionRequestInfiniPay(c *gin.Context) {
 		MerchantAlias:   strings.TrimSpace(setting.InfiniMerchantAlias),
 		SuccessURL:      successURL,
 		FailureURL:      failureURL,
-		PayMethods:      sanitizeInfiniPayMethods(payMethod.PayMethods),
+		PayMethods:      resolveInfiniOrderPayMethods(payMethod),
 	}
 	if setting.InfiniOrderTTLSeconds > 0 {
 		createReq.ExpiresIn = setting.InfiniOrderTTLSeconds

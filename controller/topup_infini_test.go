@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/system_setting"
@@ -108,6 +109,33 @@ func TestResolveInfiniPayMethodConfig(t *testing.T) {
 
 	_, err = resolveInfiniPayMethodConfig("infini:unknown")
 	require.Error(t, err)
+}
+
+func TestResolveInfiniOrderPayMethods(t *testing.T) {
+	require.Nil(t, resolveInfiniOrderPayMethods(&setting.InfiniPayMethod{
+		Type: model.PaymentMethodInfini,
+	}))
+	require.Nil(t, resolveInfiniOrderPayMethods(&setting.InfiniPayMethod{
+		Type:       model.PaymentMethodInfini,
+		PayMethods: []int{1, 2},
+	}))
+	require.Nil(t, resolveInfiniOrderPayMethods(&setting.InfiniPayMethod{
+		Type:       model.PaymentMethodInfini,
+		PayMethods: []int{2, 1},
+	}))
+
+	require.Equal(t, []int{1}, resolveInfiniOrderPayMethods(&setting.InfiniPayMethod{
+		Type:       "infini:crypto",
+		PayMethods: []int{1},
+	}))
+	require.Equal(t, []int{2}, resolveInfiniOrderPayMethods(&setting.InfiniPayMethod{
+		Type:       "infini:card",
+		PayMethods: []int{2},
+	}))
+	require.Equal(t, []int{3, 1}, resolveInfiniOrderPayMethods(&setting.InfiniPayMethod{
+		Type:       "infini:custom",
+		PayMethods: []int{3, 1, 3, 0, -1},
+	}))
 }
 
 func TestResolveInfiniRedirectURL(t *testing.T) {
