@@ -131,6 +131,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"pay_methods":             payMethods,
 		"min_topup":               operation_setting.MinTopUp,
 		"stripe_min_topup":        setting.StripeMinTopUp,
+		"infini_unit_price":       setting.InfiniUnitPrice,
 		"infini_min_topup":        setting.InfiniMinTopUp,
 		"waffo_min_topup":         setting.WaffoMinTopUp,
 		"waffo_pancake_min_topup": setting.WaffoPancakeMinTopUp,

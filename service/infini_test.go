@@ -1,9 +1,12 @@
 package service
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -45,4 +48,47 @@ func TestResolveInfiniBaseURL(t *testing.T) {
 
 	setting.InfiniBaseURL = "https://custom.infini.test/"
 	require.Equal(t, "https://custom.infini.test", resolveInfiniBaseURL())
+}
+
+func TestUnmarshalInfiniResponseSupportsWrappedPayload(t *testing.T) {
+	body := []byte(`{"code":0,"message":"","data":{"order_id":"ord_123","request_id":"req_123","checkout_url":"https://checkout.infini.money/pay/abc"}}`)
+	var resp InfiniCreateOrderResponse
+	require.NoError(t, unmarshalInfiniResponse(body, &resp))
+	require.Equal(t, "ord_123", resp.OrderID)
+	require.Equal(t, "req_123", resp.RequestID)
+	require.Equal(t, "https://checkout.infini.money/pay/abc", resp.CheckoutURL)
+}
+
+func TestCreateOrderReissuesCheckoutURLWhenMissing(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/acquiring/order", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPost, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"code":0,"message":"","data":{"order_id":"ord_123","request_id":"req_123","client_reference":"trade_123"}}`))
+	})
+	mux.HandleFunc("/v1/acquiring/order/token/reissue", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPost, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"code":0,"message":"","data":{"order_id":"ord_123","checkout_url":"https://checkout.infini.money/pay/abc","token":"token_123"}}`))
+	})
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	client := &InfiniClient{
+		KeyID:     "test_key",
+		SecretKey: "test_secret",
+		BaseURL:   server.URL,
+		Client:    server.Client(),
+	}
+
+	resp, err := client.CreateOrder(context.Background(), &InfiniCreateOrderRequest{
+		Amount:    "1",
+		RequestID: "req_123",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "ord_123", resp.OrderID)
+	require.Equal(t, "req_123", resp.RequestID)
+	require.Equal(t, "https://checkout.infini.money/pay/abc", resp.CheckoutURL)
+	require.Equal(t, "token_123", resp.Token)
 }

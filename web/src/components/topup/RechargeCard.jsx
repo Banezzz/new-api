@@ -33,6 +33,7 @@ import {
   Tooltip,
   Tabs,
   TabPane,
+  Tag,
 } from '@douyinfe/semi-ui';
 import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si';
 import {
@@ -63,7 +64,6 @@ const RechargeCard = ({
   selectedPreset,
   selectPresetAmount,
   formatLargeNumber,
-  priceRatio,
   topUpCount,
   minTopUp,
   renderQuotaWithAmount,
@@ -71,6 +71,9 @@ const RechargeCard = ({
   setTopUpCount,
   setSelectedPreset,
   renderAmount,
+  formatAmount,
+  getEffectivePaymentMethod,
+  getPresetPricing,
   amountLoading,
   payMethods,
   preTopUp,
@@ -85,7 +88,6 @@ const RechargeCard = ({
   userState,
   renderQuota,
   statusLoading,
-  topupInfo,
   onOpenHistory,
   enableWaffoTopUp,
   enableWaffoPancakeTopUp,
@@ -105,6 +107,7 @@ const RechargeCard = ({
   const shouldShowSubscription =
     !subscriptionLoading && subscriptionPlans.length > 0;
   const regularPayMethods = payMethods || [];
+  const effectivePaymentMethod = getEffectivePaymentMethod();
 
   useEffect(() => {
     if (initialTabSetRef.current) return;
@@ -267,14 +270,14 @@ const RechargeCard = ({
                         if (value && value >= 1) {
                           setTopUpCount(value);
                           setSelectedPreset(null);
-                          await getAmount(value);
+                          await getAmount(value, effectivePaymentMethod);
                         }
                       }}
                       onBlur={(e) => {
                         const value = parseInt(e.target.value);
                         if (!value || value < 1) {
                           setTopUpCount(1);
-                          getAmount(1);
+                          getAmount(1, effectivePaymentMethod);
                         }
                       }}
                       formatter={(value) => (value ? `${value}` : '')}
@@ -415,7 +418,10 @@ const RechargeCard = ({
                 </Row>
               )}
 
-              {(enableOnlineTopUp || enableStripeTopUp || enableWaffoTopUp) && (
+              {(enableOnlineTopUp ||
+                enableStripeTopUp ||
+                enableInfiniTopUp ||
+                enableWaffoTopUp) && (
                 <Form.Slot
                   label={
                     <div className='flex items-center gap-2'>
@@ -441,43 +447,23 @@ const RechargeCard = ({
                 >
                   <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'>
                     {presetAmounts.map((preset, index) => {
-                      const discount =
-                        preset.discount ||
-                        topupInfo?.discount?.[preset.value] ||
-                        1.0;
-                      const originalPrice = preset.value * priceRatio;
-                      const discountedPrice = originalPrice * discount;
+                      const { discount, actualAmount, saveAmount } =
+                        getPresetPricing(preset, effectivePaymentMethod);
                       const hasDiscount = discount < 1.0;
-                      const actualPay = discountedPrice;
-                      const save = originalPrice - discountedPrice;
 
                       // 根据当前货币类型换算显示金额和数量
                       const { symbol, rate, type } = getCurrencyConfig();
-                      const statusStr = localStorage.getItem('status');
-                      let usdRate = 7; // 默认CNY汇率
-                      try {
-                        if (statusStr) {
-                          const s = JSON.parse(statusStr);
-                          usdRate = s?.usd_exchange_rate || 7;
-                        }
-                      } catch (e) {}
 
                       let displayValue = preset.value; // 显示的数量
-                      let displayActualPay = actualPay;
-                      let displaySave = save;
+                      let displayActualPay = actualAmount;
+                      let displaySave = saveAmount;
 
-                      if (type === 'USD') {
-                        // 数量保持USD，价格从CNY转USD
-                        displayActualPay = actualPay / usdRate;
-                        displaySave = save / usdRate;
-                      } else if (type === 'CNY') {
+                      if (type === 'CNY') {
                         // 数量转CNY，价格已是CNY
-                        displayValue = preset.value * usdRate;
+                        displayValue = preset.value * rate;
                       } else if (type === 'CUSTOM') {
                         // 数量和价格都转自定义货币
                         displayValue = preset.value * rate;
-                        displayActualPay = (actualPay / usdRate) * rate;
-                        displaySave = (save / usdRate) * rate;
                       }
 
                       return (
@@ -494,7 +480,7 @@ const RechargeCard = ({
                           }}
                           bodyStyle={{ padding: '12px' }}
                           onClick={() => {
-                            selectPresetAmount(preset);
+                            selectPresetAmount(preset, effectivePaymentMethod);
                             onlineFormApiRef.current?.setValue(
                               'topUpCount',
                               preset.value,
@@ -527,11 +513,15 @@ const RechargeCard = ({
                                 margin: '4px 0',
                               }}
                             >
-                              {t('实付')} {symbol}
-                              {displayActualPay.toFixed(2)}，
+                              {t('实付')}{' '}
+                              {formatAmount(
+                                displayActualPay,
+                                effectivePaymentMethod,
+                              )}
+                              ，
                               {hasDiscount
-                                ? `${t('节省')} ${symbol}${displaySave.toFixed(2)}`
-                                : `${t('节省')} ${symbol}0.00`}
+                                ? `${t('节省')} ${formatAmount(displaySave, effectivePaymentMethod)}`
+                                : `${t('节省')} ${formatAmount(0, effectivePaymentMethod)}`}
                             </div>
                           </div>
                         </Card>

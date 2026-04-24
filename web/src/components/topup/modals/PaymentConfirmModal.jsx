@@ -34,6 +34,7 @@ const PaymentConfirmModal = ({
   renderQuotaWithAmount,
   amountLoading,
   renderAmount,
+  formatAmount,
   payWay,
   payMethods,
   // 新增：用于显示折扣明细
@@ -93,19 +94,15 @@ const PaymentConfirmModal = ({
             {hasDiscount && !amountLoading && (
               <>
                 <div className='flex justify-between items-center'>
-                  <Text className='text-semi-color-text-2'>
-                    {t('原价')}：
-                  </Text>
+                  <Text className='text-semi-color-text-2'>{t('原价')}：</Text>
                   <Text delete className='text-semi-color-text-2'>
-                    {`${originalAmount.toFixed(2)} ${t('元')}`}
+                    {formatAmount(originalAmount, payWay)}
                   </Text>
                 </div>
                 <div className='flex justify-between items-center'>
-                  <Text className='text-semi-color-text-2'>
-                    {t('优惠')}：
-                  </Text>
+                  <Text className='text-semi-color-text-2'>{t('优惠')}：</Text>
                   <Text className='text-emerald-600 dark:text-emerald-400'>
-                    {`- ${discountAmount.toFixed(2)} ${t('元')}`}
+                    {`- ${formatAmount(discountAmount, payWay)}`}
                   </Text>
                 </div>
               </>
@@ -188,9 +185,7 @@ const PaymentConfirmModal = ({
                             size={16}
                             color='#635BFF'
                           />
-                          <Text className='text-semi-color-text-0'>
-                            Stripe
-                          </Text>
+                          <Text className='text-semi-color-text-0'>Stripe</Text>
                         </>
                       );
                     } else {

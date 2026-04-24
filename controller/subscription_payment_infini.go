@@ -134,6 +134,13 @@ func SubscriptionRequestInfiniPay(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起支付失败"})
 		return
 	}
+	if strings.TrimSpace(resp.CheckoutURL) == "" {
+		order.Status = common.TopUpStatusFailed
+		_ = order.Update()
+		logger.LogError(c.Request.Context(), fmt.Sprintf("Infini 订阅订单创建成功但未返回支付链接 trade_no=%s order_id=%s request_id=%s plan_id=%d pay_method=%s", order.TradeNo, resp.OrderID, resp.RequestID, plan.Id, payMethod.Type))
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "Infini 未返回支付链接，请稍后重试"})
+		return
+	}
 
 	logger.LogInfo(c.Request.Context(), fmt.Sprintf("Infini 订阅订单创建成功 trade_no=%s order_id=%s plan_id=%d price=%.2f pay_method=%s", order.TradeNo, resp.OrderID, plan.Id, plan.PriceAmount, payMethod.Type))
 	c.JSON(http.StatusOK, gin.H{

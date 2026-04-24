@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -75,6 +76,12 @@ type InfiniReissueOrderTokenResponse struct {
 	Token       string `json:"token"`
 }
 
+type infiniAPIResponseEnvelope struct {
+	Code    *int            `json:"code,omitempty"`
+	Message string          `json:"message,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"`
+}
+
 type InfiniWebhookOrderEvent struct {
 	Event            string   `json:"event"`
 	OrderID          string   `json:"order_id"`
@@ -125,6 +132,9 @@ func (c *InfiniClient) CreateOrder(ctx context.Context, req *InfiniCreateOrderRe
 	if err := c.requestJSON(ctx, http.MethodPost, "/v1/acquiring/order", req, &resp); err != nil {
 		return nil, err
 	}
+	if err := c.ensureHostedCheckout(ctx, &resp.OrderID, &resp.CheckoutURL, &resp.Token); err != nil {
+		return nil, err
+	}
 	return &resp, nil
 }
 
@@ -144,6 +154,9 @@ func (c *InfiniClient) ReissueOrderToken(ctx context.Context, orderID string) (*
 	if err := c.requestJSON(ctx, http.MethodPost, "/v1/acquiring/order/token/reissue", &InfiniReissueOrderTokenRequest{
 		OrderID: orderID,
 	}, &resp); err != nil {
+		return nil, err
+	}
+	if err := c.ensureHostedCheckout(ctx, &resp.OrderID, &resp.CheckoutURL, &resp.Token); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -188,7 +201,7 @@ func (c *InfiniClient) requestJSON(ctx context.Context, method string, path stri
 	if out == nil || len(respBody) == 0 {
 		return nil
 	}
-	return common.Unmarshal(respBody, out)
+	return unmarshalInfiniResponse(respBody, out)
 }
 
 func (c *InfiniClient) signRequest(method string, path string, body []byte) map[string]string {
@@ -233,4 +246,55 @@ func VerifyInfiniWebhookSignature(payload string, timestamp string, eventID stri
 
 func ParseInfiniAmount(raw string) (decimal.Decimal, error) {
 	return decimal.NewFromString(strings.TrimSpace(raw))
+}
+
+func unmarshalInfiniResponse(respBody []byte, out any) error {
+	var envelope infiniAPIResponseEnvelope
+	if err := common.Unmarshal(respBody, &envelope); err == nil && envelope.Code != nil {
+		if *envelope.Code != 0 {
+			return fmt.Errorf("infini api request failed: code=%d message=%s", *envelope.Code, strings.TrimSpace(envelope.Message))
+		}
+		if len(envelope.Data) == 0 || string(envelope.Data) == "null" {
+			return nil
+		}
+		return common.Unmarshal(envelope.Data, out)
+	}
+	return common.Unmarshal(respBody, out)
+}
+
+func (c *InfiniClient) ensureHostedCheckout(ctx context.Context, orderID *string, checkoutURL *string, token *string) error {
+	if checkoutURL == nil {
+		return nil
+	}
+	if strings.TrimSpace(*checkoutURL) != "" {
+		return nil
+	}
+	if orderID == nil || strings.TrimSpace(*orderID) == "" {
+		return nil
+	}
+
+	resp, err := c.reissueOrderToken(ctx, strings.TrimSpace(*orderID))
+	if err != nil {
+		return err
+	}
+	if checkoutURL != nil && strings.TrimSpace(*checkoutURL) == "" {
+		*checkoutURL = strings.TrimSpace(resp.CheckoutURL)
+	}
+	if token != nil && strings.TrimSpace(*token) == "" {
+		*token = strings.TrimSpace(resp.Token)
+	}
+	if orderID != nil && strings.TrimSpace(*orderID) == "" {
+		*orderID = strings.TrimSpace(resp.OrderID)
+	}
+	return nil
+}
+
+func (c *InfiniClient) reissueOrderToken(ctx context.Context, orderID string) (*InfiniReissueOrderTokenResponse, error) {
+	var resp InfiniReissueOrderTokenResponse
+	if err := c.requestJSON(ctx, http.MethodPost, "/v1/acquiring/order/token/reissue", &InfiniReissueOrderTokenRequest{
+		OrderID: orderID,
+	}, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }

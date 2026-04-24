@@ -92,6 +92,7 @@ func GetStatus(c *gin.Context) {
 		"usd_exchange_rate":   operation_setting.USDExchangeRate,
 		"price":               operation_setting.Price,
 		"stripe_unit_price":   setting.StripeUnitPrice,
+		"infini_unit_price":   setting.InfiniUnitPrice,
 		"enable_online_topup": isEpayTopUpEnabled(),
 		"enable_stripe_topup": isStripeTopUpEnabled(),
 		"enable_creem_topup":  isCreemTopUpEnabled(),
