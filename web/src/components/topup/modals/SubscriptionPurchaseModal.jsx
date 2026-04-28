@@ -50,17 +50,22 @@ const SubscriptionPurchaseModal = ({
   setSelectedEpayMethod,
   selectedInfiniMethod,
   setSelectedInfiniMethod,
+  selectedEpusdtMethod,
+  setSelectedEpusdtMethod,
   epayMethods = [],
   infiniMethods = [],
+  epusdtMethods = [],
   enableOnlineTopUp = false,
   enableStripeTopUp = false,
   enableCreemTopUp = false,
   enableInfiniTopUp = false,
+  enableEpusdtTopUp = false,
   purchaseLimitInfo = null,
   onPayStripe,
   onPayCreem,
   onPayEpay,
   onPayInfini,
+  onPayEpusdt,
 }) => {
   const plan = selectedPlan?.plan;
   const totalAmount = Number(plan?.total_amount || 0);
@@ -75,7 +80,9 @@ const SubscriptionPurchaseModal = ({
   const hasCreem = enableCreemTopUp && !!plan?.creem_product_id;
   const hasEpay = enableOnlineTopUp && epayMethods.length > 0;
   const hasInfini = enableInfiniTopUp && infiniMethods.length > 0;
-  const hasAnyPayment = hasStripe || hasCreem || hasEpay || hasInfini;
+  const hasEpusdt = enableEpusdtTopUp && epusdtMethods.length > 0;
+  const hasAnyPayment =
+    hasStripe || hasCreem || hasEpay || hasInfini || hasEpusdt;
   const purchaseLimit = Number(purchaseLimitInfo?.limit || 0);
   const purchaseCount = Number(purchaseLimitInfo?.count || 0);
   const purchaseLimitReached =
@@ -117,7 +124,10 @@ const SubscriptionPurchaseModal = ({
                   {t('有效期')}：
                 </Text>
                 <div className='flex items-center'>
-                  <CalendarClock size={14} className='mr-1 text-semi-color-text-2' />
+                  <CalendarClock
+                    size={14}
+                    className='mr-1 text-semi-color-text-2'
+                  />
                   <Text className='text-semi-color-text-0'>
                     {formatSubscriptionDuration(plan, t)}
                   </Text>
@@ -146,9 +156,7 @@ const SubscriptionPurchaseModal = ({
                       </Text>
                     </Tooltip>
                   ) : (
-                    <Text className='text-semi-color-text-0'>
-                      {t('不限')}
-                    </Text>
+                    <Text className='text-semi-color-text-0'>{t('不限')}</Text>
                   )}
                 </div>
               </div>
@@ -243,6 +251,32 @@ const SubscriptionPurchaseModal = ({
                     disabled={!selectedInfiniMethod || purchaseLimitReached}
                   >
                     Infini
+                  </Button>
+                </div>
+              )}
+
+              {hasEpusdt && (
+                <div className='flex gap-2'>
+                  <Select
+                    value={selectedEpusdtMethod}
+                    onChange={setSelectedEpusdtMethod}
+                    style={{ flex: 1 }}
+                    size='default'
+                    placeholder={t('选择支付方式')}
+                    optionList={epusdtMethods.map((m) => ({
+                      value: m.type,
+                      label: m.name || m.type,
+                    }))}
+                    disabled={purchaseLimitReached}
+                  />
+                  <Button
+                    theme='solid'
+                    type='primary'
+                    onClick={onPayEpusdt}
+                    loading={paying}
+                    disabled={!selectedEpusdtMethod || purchaseLimitReached}
+                  >
+                    EPUSDT
                   </Button>
                 </div>
               )}

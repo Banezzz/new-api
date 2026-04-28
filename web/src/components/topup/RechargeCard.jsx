@@ -57,6 +57,7 @@ const RechargeCard = ({
   enableOnlineTopUp,
   enableStripeTopUp,
   enableInfiniTopUp,
+  enableEpusdtTopUp,
   enableCreemTopUp,
   creemProducts,
   creemPreTopUp,
@@ -233,6 +234,7 @@ const RechargeCard = ({
         ) : enableOnlineTopUp ||
           enableStripeTopUp ||
           enableInfiniTopUp ||
+          enableEpusdtTopUp ||
           enableCreemTopUp ||
           enableWaffoTopUp ||
           enableWaffoPancakeTopUp ? (
@@ -244,6 +246,7 @@ const RechargeCard = ({
               {(enableOnlineTopUp ||
                 enableStripeTopUp ||
                 enableInfiniTopUp ||
+                enableEpusdtTopUp ||
                 enableWaffoTopUp ||
                 enableWaffoPancakeTopUp) && (
                 <Row gutter={12}>
@@ -255,6 +258,7 @@ const RechargeCard = ({
                         !enableOnlineTopUp &&
                         !enableStripeTopUp &&
                         !enableInfiniTopUp &&
+                        !enableEpusdtTopUp &&
                         !enableWaffoTopUp &&
                         !enableWaffoPancakeTopUp
                       }
@@ -323,16 +327,19 @@ const RechargeCard = ({
                             const isInfini =
                               typeof payMethod.type === 'string' &&
                               payMethod.type.startsWith('infini');
+                            const isEpusdt = payMethod.type === 'epusdt';
                             const isWaffoPancake =
                               payMethod.type === 'waffo_pancake';
                             const disabled =
                               (!enableOnlineTopUp &&
                                 !isStripe &&
                                 !isInfini &&
+                                !isEpusdt &&
                                 !isWaffo &&
                                 !isWaffoPancake) ||
                               (!enableStripeTopUp && isStripe) ||
                               (!enableInfiniTopUp && isInfini) ||
+                              (!enableEpusdtTopUp && isEpusdt) ||
                               (!enableWaffoTopUp && isWaffo) ||
                               (!enableWaffoPancakeTopUp && isWaffoPancake) ||
                               minTopupVal > Number(topUpCount || 0);
@@ -370,6 +377,14 @@ const RechargeCard = ({
                                       color={
                                         payMethod.color ||
                                         'rgba(var(--semi-indigo-5), 1)'
+                                      }
+                                    />
+                                  ) : isEpusdt ? (
+                                    <Wallet
+                                      size={18}
+                                      color={
+                                        payMethod.color ||
+                                        'rgba(var(--semi-green-5), 1)'
                                       }
                                     />
                                   ) : payMethod.type === 'waffo_pancake' ? (
@@ -421,6 +436,7 @@ const RechargeCard = ({
               {(enableOnlineTopUp ||
                 enableStripeTopUp ||
                 enableInfiniTopUp ||
+                enableEpusdtTopUp ||
                 enableWaffoTopUp) && (
                 <Form.Slot
                   label={
@@ -671,6 +687,7 @@ const RechargeCard = ({
                 enableStripeTopUp={enableStripeTopUp}
                 enableCreemTopUp={enableCreemTopUp}
                 enableInfiniTopUp={enableInfiniTopUp}
+                enableEpusdtTopUp={enableEpusdtTopUp}
                 billingPreference={billingPreference}
                 onChangeBillingPreference={onChangeBillingPreference}
                 activeSubscriptions={activeSubscriptions}

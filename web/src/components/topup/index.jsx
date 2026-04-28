@@ -61,12 +61,21 @@ const TopUp = () => {
   const [priceRatio, setPriceRatio] = useState(statusState?.status?.price || 1);
   const stripeUnitPrice = Number(statusState?.status?.stripe_unit_price || 1);
   const infiniUnitPrice = Number(statusState?.status?.infini_unit_price || 1);
+  const [epusdtUnitPrice, setEpusdtUnitPrice] = useState(
+    Number(statusState?.status?.epusdt_unit_price || 1),
+  );
+  const [epusdtCurrency, setEpusdtCurrency] = useState(
+    statusState?.status?.epusdt_currency || 'usd',
+  );
 
   const [enableStripeTopUp, setEnableStripeTopUp] = useState(
     statusState?.status?.enable_stripe_topup || false,
   );
   const [enableInfiniTopUp, setEnableInfiniTopUp] = useState(
     statusState?.status?.enable_infini_topup || false,
+  );
+  const [enableEpusdtTopUp, setEnableEpusdtTopUp] = useState(
+    statusState?.status?.enable_epusdt_topup || false,
   );
   const [statusLoading, setStatusLoading] = useState(true);
 
@@ -135,8 +144,13 @@ const TopUp = () => {
   const isInfiniPaymentMethod = (payment) =>
     typeof payment === 'string' && payment.startsWith('infini');
 
+  const isEpusdtPaymentMethod = (payment) => payment === 'epusdt';
+
   const isDollarPaymentMethod = (payment) =>
-    payment === 'stripe' || isInfiniPaymentMethod(payment);
+    payment === 'stripe' ||
+    isInfiniPaymentMethod(payment) ||
+    (isEpusdtPaymentMethod(payment) &&
+      String(epusdtCurrency).toLowerCase() === 'usd');
 
   const getEffectivePaymentMethod = (payment = payWay) => {
     if (payment) {
@@ -170,6 +184,9 @@ const TopUp = () => {
     if (isInfiniPaymentMethod(payment)) {
       return infiniUnitPrice;
     }
+    if (isEpusdtPaymentMethod(payment)) {
+      return epusdtUnitPrice;
+    }
     return priceRatio;
   };
 
@@ -181,6 +198,12 @@ const TopUp = () => {
     const normalizedAmount = Number(value || 0);
     if (isDollarPaymentMethod(payment)) {
       return `$${normalizedAmount.toFixed(digits)}`;
+    }
+    if (isEpusdtPaymentMethod(payment)) {
+      const currency = String(epusdtCurrency || 'usd').toUpperCase();
+      return currency === 'CNY'
+        ? `${normalizedAmount.toFixed(digits)} ${t('元')}`
+        : `${normalizedAmount.toFixed(digits)} ${currency}`;
     }
     return `${normalizedAmount.toFixed(digits)} ${t('元')}`;
   };
@@ -211,6 +234,9 @@ const TopUp = () => {
     }
     if (typeof payment === 'string' && payment.startsWith('infini')) {
       return getInfiniAmount(value, payment);
+    }
+    if (payment === 'epusdt') {
+      return getEpusdtAmount(value);
     }
     if (payment === 'waffo_pancake') {
       return getWaffoPancakeAmount(value);
@@ -277,6 +303,11 @@ const TopUp = () => {
     } else if (payment.startsWith('infini')) {
       if (!enableInfiniTopUp) {
         showError(t('管理员未开启 Infini 充值！'));
+        return;
+      }
+    } else if (payment === 'epusdt') {
+      if (!enableEpusdtTopUp) {
+        showError(t('管理员未开启 EPUSDT 充值！'));
         return;
       }
     } else if (payment === 'waffo_pancake') {
@@ -350,6 +381,35 @@ const TopUp = () => {
         });
         if (res?.data?.message === 'success') {
           window.open(res.data.data?.checkout_url, '_blank');
+        } else {
+          showError(res?.data?.data || t('支付失败'));
+        }
+      } catch (error) {
+        showError(t('支付请求失败'));
+      } finally {
+        setOpen(false);
+        setConfirmLoading(false);
+      }
+      return;
+    }
+
+    if (payWay === 'epusdt') {
+      setConfirmLoading(true);
+      try {
+        if (amount === 0) {
+          await getEpusdtAmount();
+        }
+        const res = await API.post('/api/user/epusdt/pay', {
+          amount: parseInt(topUpCount),
+        });
+        if (res?.data?.message === 'success') {
+          const paymentUrl =
+            res.data.data?.payment_url || res.data.data?.checkout_url || '';
+          if (paymentUrl) {
+            window.open(paymentUrl, '_blank');
+          } else {
+            showError(t('支付请求失败'));
+          }
         } else {
           showError(res?.data?.data || t('支付失败'));
         }
@@ -743,6 +803,7 @@ const TopUp = () => {
           const enableOnlineTopUp = data.enable_online_topup || false;
           const enableCreemTopUp = data.enable_creem_topup || false;
           const enableInfiniTopUp = data.enable_infini_topup || false;
+          const enableEpusdtTopUp = data.enable_epusdt_topup || false;
           const enableWaffoTopUp = data.enable_waffo_topup || false;
           const enableWaffoPancakeTopUp =
             data.enable_waffo_pancake_topup || false;
@@ -752,15 +813,20 @@ const TopUp = () => {
               ? data.stripe_min_topup
               : enableInfiniTopUp
                 ? data.infini_min_topup
-                : enableWaffoTopUp
-                  ? data.waffo_min_topup
-                  : enableWaffoPancakeTopUp
-                    ? data.waffo_pancake_min_topup
-                    : 1;
+                : enableEpusdtTopUp
+                  ? data.epusdt_min_topup
+                  : enableWaffoTopUp
+                    ? data.waffo_min_topup
+                    : enableWaffoPancakeTopUp
+                      ? data.waffo_pancake_min_topup
+                      : 1;
           setEnableOnlineTopUp(enableOnlineTopUp);
           setEnableStripeTopUp(enableStripeTopUp);
           setEnableCreemTopUp(enableCreemTopUp);
           setEnableInfiniTopUp(enableInfiniTopUp);
+          setEnableEpusdtTopUp(enableEpusdtTopUp);
+          setEpusdtUnitPrice(Number(data.epusdt_unit_price || 1));
+          setEpusdtCurrency(data.epusdt_currency || 'usd');
           setEnableWaffoTopUp(enableWaffoTopUp);
           setWaffoPayMethods(data.waffo_pay_methods || []);
           setWaffoMinTopUp(data.waffo_min_topup || 1);
@@ -974,6 +1040,33 @@ const TopUp = () => {
     }
   };
 
+  const getEpusdtAmount = async (value) => {
+    if (value === undefined) {
+      value = topUpCount;
+    }
+    setAmountLoading(true);
+    try {
+      const res = await API.post('/api/user/epusdt/amount', {
+        amount: parseFloat(value),
+      });
+      if (res !== undefined) {
+        const { message, data } = res.data;
+        if (message === 'success') {
+          setAmount(parseFloat(data));
+        } else {
+          setAmount(0);
+          Toast.error({ content: '错误：' + data, id: 'getAmount' });
+        }
+      } else {
+        showError(res);
+      }
+    } catch (err) {
+      // amount fetch failed silently
+    } finally {
+      setAmountLoading(false);
+    }
+  };
+
   const handleCancel = () => {
     setOpen(false);
   };
@@ -1093,6 +1186,7 @@ const TopUp = () => {
           enableOnlineTopUp={enableOnlineTopUp}
           enableStripeTopUp={enableStripeTopUp}
           enableInfiniTopUp={enableInfiniTopUp}
+          enableEpusdtTopUp={enableEpusdtTopUp}
           enableCreemTopUp={enableCreemTopUp}
           creemProducts={creemProducts}
           creemPreTopUp={creemPreTopUp}

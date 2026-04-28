@@ -48,6 +48,7 @@ function getEpayMethods(payMethods = []) {
       m?.type &&
       m.type !== 'stripe' &&
       m.type !== 'creem' &&
+      m.type !== 'epusdt' &&
       m.type !== 'waffo_pancake' &&
       !m.type.startsWith('waffo:') &&
       !m.type.startsWith('infini'),
@@ -55,7 +56,13 @@ function getEpayMethods(payMethods = []) {
 }
 
 function getInfiniMethods(payMethods = []) {
-  return (payMethods || []).filter((m) => m?.type && m.type.startsWith('infini'));
+  return (payMethods || []).filter(
+    (m) => m?.type && m.type.startsWith('infini'),
+  );
+}
+
+function getEpusdtMethods(payMethods = []) {
+  return (payMethods || []).filter((m) => m?.type === 'epusdt');
 }
 
 // 提交易支付表单
@@ -88,6 +95,7 @@ const SubscriptionPlansCard = ({
   enableStripeTopUp = false,
   enableCreemTopUp = false,
   enableInfiniTopUp = false,
+  enableEpusdtTopUp = false,
   billingPreference,
   onChangeBillingPreference,
   activeSubscriptions = [],
@@ -100,6 +108,7 @@ const SubscriptionPlansCard = ({
   const [paying, setPaying] = useState(false);
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('');
   const [selectedInfiniMethod, setSelectedInfiniMethod] = useState('');
+  const [selectedEpusdtMethod, setSelectedEpusdtMethod] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   const epayMethods = useMemo(() => getEpayMethods(payMethods), [payMethods]);
@@ -107,11 +116,16 @@ const SubscriptionPlansCard = ({
     () => getInfiniMethods(payMethods),
     [payMethods],
   );
+  const epusdtMethods = useMemo(
+    () => getEpusdtMethods(payMethods),
+    [payMethods],
+  );
 
   const openBuy = (p) => {
     setSelectedPlan(p);
     setSelectedEpayMethod(epayMethods?.[0]?.type || '');
     setSelectedInfiniMethod(infiniMethods?.[0]?.type || 'infini');
+    setSelectedEpusdtMethod(epusdtMethods?.[0]?.type || 'epusdt');
     setOpen(true);
   };
 
@@ -230,6 +244,40 @@ const SubscriptionPlansCard = ({
         window.open(res.data.data?.checkout_url, '_blank');
         showSuccess(t('已打开支付页面'));
         closeBuy();
+      } else {
+        const errorMsg =
+          typeof res.data?.data === 'string'
+            ? res.data.data
+            : res.data?.message || t('支付失败');
+        showError(errorMsg);
+      }
+    } catch (e) {
+      showError(t('支付请求失败'));
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const payEpusdt = async () => {
+    if (!selectedEpusdtMethod) {
+      showError(t('请选择支付方式'));
+      return;
+    }
+    setPaying(true);
+    try {
+      const res = await API.post('/api/subscription/epusdt/pay', {
+        plan_id: selectedPlan.plan.id,
+      });
+      if (res.data?.message === 'success') {
+        const paymentUrl =
+          res.data.data?.payment_url || res.data.data?.checkout_url || '';
+        if (paymentUrl) {
+          window.open(paymentUrl, '_blank');
+          showSuccess(t('已打开支付页面'));
+          closeBuy();
+        } else {
+          showError(t('支付请求失败'));
+        }
       } else {
         const errorMsg =
           typeof res.data?.data === 'string'
@@ -721,6 +769,10 @@ const SubscriptionPlansCard = ({
         enableCreemTopUp={enableCreemTopUp}
         infiniMethods={infiniMethods}
         enableInfiniTopUp={enableInfiniTopUp}
+        epusdtMethods={epusdtMethods}
+        enableEpusdtTopUp={enableEpusdtTopUp}
+        selectedEpusdtMethod={selectedEpusdtMethod}
+        setSelectedEpusdtMethod={setSelectedEpusdtMethod}
         selectedInfiniMethod={selectedInfiniMethod}
         setSelectedInfiniMethod={setSelectedInfiniMethod}
         purchaseLimitInfo={
@@ -735,6 +787,7 @@ const SubscriptionPlansCard = ({
         onPayCreem={payCreem}
         onPayEpay={payEpay}
         onPayInfini={payInfini}
+        onPayEpusdt={payEpusdt}
       />
     </>
   );
