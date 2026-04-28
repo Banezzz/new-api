@@ -100,6 +100,21 @@ func TestRechargeWaffoPancake_RejectsMismatchedPaymentMethod(t *testing.T) {
 	assert.Equal(t, 0, getUserQuotaForPaymentGuardTest(t, 101))
 }
 
+func TestRechargeEpusdt_RejectsMismatchedPaymentMethod(t *testing.T) {
+	truncateTables(t)
+
+	insertUserForPaymentGuardTest(t, 102, 0)
+	insertTopUpForPaymentGuardTest(t, "epusdt-guard", 102, PaymentMethodStripe)
+
+	err := RechargeEpusdt("epusdt-guard", "127.0.0.1")
+	require.Error(t, err)
+
+	topUp := GetTopUpByTradeNo("epusdt-guard")
+	require.NotNil(t, topUp)
+	assert.Equal(t, common.TopUpStatusPending, topUp.Status)
+	assert.Equal(t, 0, getUserQuotaForPaymentGuardTest(t, 102))
+}
+
 func TestUpdatePendingTopUpStatus_RejectsMismatchedPaymentMethod(t *testing.T) {
 	testCases := []struct {
 		name                  string

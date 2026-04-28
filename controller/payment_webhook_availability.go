@@ -111,6 +111,34 @@ func isInfiniWebhookEnabled() bool {
 	return isInfiniTopUpEnabled()
 }
 
+func isEpusdtTopUpEnabled() bool {
+	if !setting.EpusdtEnabled {
+		return false
+	}
+
+	return strings.TrimSpace(setting.EpusdtPID) != "" &&
+		strings.TrimSpace(setting.EpusdtSecretKey) != "" &&
+		strings.TrimSpace(setting.EpusdtCurrency) != "" &&
+		strings.TrimSpace(setting.EpusdtToken) != "" &&
+		strings.TrimSpace(setting.EpusdtNetwork) != "" &&
+		isEpusdtCallbackAddressConfigured()
+}
+
+func isEpusdtWebhookConfigured() bool {
+	return strings.TrimSpace(setting.EpusdtPID) != "" &&
+		strings.TrimSpace(setting.EpusdtSecretKey) != ""
+}
+
+func isEpusdtCallbackAddressConfigured() bool {
+	return strings.TrimSpace(setting.EpusdtNotifyURL) != "" ||
+		strings.TrimSpace(operation_setting.CustomCallbackAddress) != "" ||
+		strings.TrimSpace(system_setting.ServerAddress) != ""
+}
+
+func isEpusdtWebhookEnabled() bool {
+	return setting.EpusdtEnabled && isEpusdtWebhookConfigured()
+}
+
 func isEpayTopUpEnabled() bool {
 	return isEpayWebhookConfigured() && len(operation_setting.PayMethods) > 0
 }

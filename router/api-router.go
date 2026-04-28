@@ -49,6 +49,7 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.POST("/stripe/webhook", controller.StripeWebhook)
 		apiRouter.POST("/creem/webhook", controller.CreemWebhook)
 		apiRouter.POST("/infini/webhook", controller.InfiniWebhook)
+		apiRouter.POST("/epusdt/webhook", controller.EpusdtWebhook)
 		apiRouter.POST("/waffo/webhook", controller.WaffoWebhook)
 		//apiRouter.POST("/waffo-pancake/webhook", controller.WaffoPancakeWebhook)
 
@@ -94,6 +95,8 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/creem/pay", middleware.CriticalRateLimit(), controller.RequestCreemPay)
 				selfRoute.POST("/infini/amount", controller.RequestInfiniAmount)
 				selfRoute.POST("/infini/pay", middleware.CriticalRateLimit(), controller.RequestInfiniPay)
+				selfRoute.POST("/epusdt/amount", controller.RequestEpusdtAmount)
+				selfRoute.POST("/epusdt/pay", middleware.CriticalRateLimit(), controller.RequestEpusdtPay)
 				selfRoute.POST("/waffo/amount", controller.RequestWaffoAmount)
 				selfRoute.POST("/waffo/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPay)
 				//selfRoute.POST("/waffo-pancake/amount", controller.RequestWaffoPancakeAmount)
@@ -151,6 +154,7 @@ func SetApiRouter(router *gin.Engine) {
 			subscriptionRoute.POST("/stripe/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestStripePay)
 			subscriptionRoute.POST("/creem/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestCreemPay)
 			subscriptionRoute.POST("/infini/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestInfiniPay)
+			subscriptionRoute.POST("/epusdt/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestEpusdtPay)
 		}
 		subscriptionAdminRoute := apiRouter.Group("/subscription/admin")
 		subscriptionAdminRoute.Use(middleware.AdminAuth())

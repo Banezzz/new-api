@@ -103,6 +103,19 @@ func InitOptionMap() {
 	common.OptionMap["InfiniMinTopUp"] = strconv.Itoa(setting.InfiniMinTopUp)
 	common.OptionMap["InfiniOrderTTLSeconds"] = strconv.Itoa(setting.InfiniOrderTTLSeconds)
 	common.OptionMap["InfiniPayMethods"] = setting.InfiniPayMethods2JsonString()
+	common.OptionMap["EpusdtEnabled"] = strconv.FormatBool(setting.EpusdtEnabled)
+	common.OptionMap["EpusdtBaseURL"] = setting.EpusdtBaseURL
+	common.OptionMap["EpusdtPublicURL"] = setting.EpusdtPublicURL
+	common.OptionMap["EpusdtPID"] = setting.EpusdtPID
+	common.OptionMap["EpusdtSecretKey"] = setting.EpusdtSecretKey
+	common.OptionMap["EpusdtCurrency"] = setting.EpusdtCurrency
+	common.OptionMap["EpusdtToken"] = setting.EpusdtToken
+	common.OptionMap["EpusdtNetwork"] = setting.EpusdtNetwork
+	common.OptionMap["EpusdtPaymentType"] = setting.EpusdtPaymentType
+	common.OptionMap["EpusdtNotifyURL"] = setting.EpusdtNotifyURL
+	common.OptionMap["EpusdtReturnURL"] = setting.EpusdtReturnURL
+	common.OptionMap["EpusdtUnitPrice"] = strconv.FormatFloat(setting.EpusdtUnitPrice, 'f', -1, 64)
+	common.OptionMap["EpusdtMinTopUp"] = strconv.Itoa(setting.EpusdtMinTopUp)
 	common.OptionMap["WaffoEnabled"] = strconv.FormatBool(setting.WaffoEnabled)
 	common.OptionMap["WaffoApiKey"] = setting.WaffoApiKey
 	common.OptionMap["WaffoPrivateKey"] = setting.WaffoPrivateKey
@@ -426,6 +439,32 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.InfiniMinTopUp, _ = strconv.Atoi(value)
 	case "InfiniOrderTTLSeconds":
 		setting.InfiniOrderTTLSeconds, _ = strconv.Atoi(value)
+	case "EpusdtEnabled":
+		setting.EpusdtEnabled = value == "true"
+	case "EpusdtBaseURL":
+		setting.EpusdtBaseURL = value
+	case "EpusdtPublicURL":
+		setting.EpusdtPublicURL = value
+	case "EpusdtPID":
+		setting.EpusdtPID = value
+	case "EpusdtSecretKey":
+		setting.EpusdtSecretKey = value
+	case "EpusdtCurrency":
+		setting.EpusdtCurrency = value
+	case "EpusdtToken":
+		setting.EpusdtToken = value
+	case "EpusdtNetwork":
+		setting.EpusdtNetwork = value
+	case "EpusdtPaymentType":
+		setting.EpusdtPaymentType = value
+	case "EpusdtNotifyURL":
+		setting.EpusdtNotifyURL = value
+	case "EpusdtReturnURL":
+		setting.EpusdtReturnURL = value
+	case "EpusdtUnitPrice":
+		setting.EpusdtUnitPrice, _ = strconv.ParseFloat(value, 64)
+	case "EpusdtMinTopUp":
+		setting.EpusdtMinTopUp, _ = strconv.Atoi(value)
 	case "WaffoEnabled":
 		setting.WaffoEnabled = value == "true"
 	case "WaffoApiKey":

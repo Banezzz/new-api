@@ -93,10 +93,13 @@ func GetStatus(c *gin.Context) {
 		"price":               operation_setting.Price,
 		"stripe_unit_price":   setting.StripeUnitPrice,
 		"infini_unit_price":   setting.InfiniUnitPrice,
+		"epusdt_unit_price":   setting.EpusdtUnitPrice,
+		"epusdt_currency":     setting.EpusdtCurrency,
 		"enable_online_topup": isEpayTopUpEnabled(),
 		"enable_stripe_topup": isStripeTopUpEnabled(),
 		"enable_creem_topup":  isCreemTopUpEnabled(),
 		"enable_infini_topup": isInfiniTopUpEnabled(),
+		"enable_epusdt_topup": isEpusdtTopUpEnabled(),
 
 		// 面板启用开关
 		"api_info_enabled":      cs.ApiInfoEnabled,
