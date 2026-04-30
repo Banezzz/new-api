@@ -24,7 +24,7 @@ import SettingsPaymentGateway from '../../pages/Setting/Payment/SettingsPaymentG
 import SettingsPaymentGatewayStripe from '../../pages/Setting/Payment/SettingsPaymentGatewayStripe';
 import SettingsPaymentGatewayCreem from '../../pages/Setting/Payment/SettingsPaymentGatewayCreem';
 import SettingsPaymentGatewayInfini from '../../pages/Setting/Payment/SettingsPaymentGatewayInfini';
-import SettingsPaymentGatewayEpusdt from '../../pages/Setting/Payment/SettingsPaymentGatewayEpusdt';
+import SettingsPaymentGatewayEzpay from '../../pages/Setting/Payment/SettingsPaymentGatewayEzpay';
 import SettingsPaymentGatewayWaffo from '../../pages/Setting/Payment/SettingsPaymentGatewayWaffo';
 import SettingsPaymentGatewayWaffoPancake from '../../pages/Setting/Payment/SettingsPaymentGatewayWaffoPancake';
 import { API, showError, toBoolean } from '../../helpers';
@@ -66,19 +66,15 @@ const PaymentSetting = () => {
     InfiniOrderTTLSeconds: 0,
     InfiniPayMethods: '',
 
-    EpusdtEnabled: false,
-    EpusdtBaseURL: '',
-    EpusdtPublicURL: '',
-    EpusdtPID: '',
-    EpusdtSecretKey: '',
-    EpusdtCurrency: 'usd',
-    EpusdtToken: 'usdt',
-    EpusdtNetwork: 'tron',
-    EpusdtPaymentType: 'GMPAY',
-    EpusdtNotifyURL: '',
-    EpusdtReturnURL: '',
-    EpusdtUnitPrice: 1,
-    EpusdtMinTopUp: 1,
+    EzpayEnabled: false,
+    EzpayBaseURL: '',
+    EzpayPublicURL: '',
+    EzpayPID: '',
+    EzpaySecretKey: '',
+    EzpayNotifyURL: '',
+    EzpayReturnURL: '',
+    EzpayUnitPrice: 1,
+    EzpayMinTopUp: 1,
 
     WaffoPancakeEnabled: false,
     WaffoPancakeSandbox: false,
@@ -152,8 +148,8 @@ const PaymentSetting = () => {
           case 'InfiniUnitPrice':
           case 'InfiniMinTopUp':
           case 'InfiniOrderTTLSeconds':
-          case 'EpusdtUnitPrice':
-          case 'EpusdtMinTopUp':
+          case 'EzpayUnitPrice':
+          case 'EzpayMinTopUp':
           case 'WaffoPancakeUnitPrice':
           case 'WaffoPancakeMinTopUp':
             newInputs[item.key] = parseFloat(item.value);
@@ -171,7 +167,7 @@ const PaymentSetting = () => {
             break;
           case 'InfiniEnabled':
           case 'InfiniSandbox':
-          case 'EpusdtEnabled':
+          case 'EzpayEnabled':
             newInputs[item.key] = toBoolean(item.value);
             break;
           default:
@@ -249,8 +245,8 @@ const PaymentSetting = () => {
                 hideSectionTitle
               />
             </Tabs.TabPane>
-            <Tabs.TabPane tab={t('EPUSDT 设置')} itemKey='epusdt'>
-              <SettingsPaymentGatewayEpusdt
+            <Tabs.TabPane tab={t('EZPay 设置')} itemKey='ezpay'>
+              <SettingsPaymentGatewayEzpay
                 options={inputs}
                 refresh={onRefresh}
                 hideSectionTitle

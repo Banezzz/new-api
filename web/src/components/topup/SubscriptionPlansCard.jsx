@@ -61,8 +61,8 @@ function getInfiniMethods(payMethods = []) {
   );
 }
 
-function getEpusdtMethods(payMethods = []) {
-  return (payMethods || []).filter((m) => m?.type === 'epusdt');
+function getEzpayMethods(payMethods = []) {
+  return (payMethods || []).filter((m) => m?.type === 'ezpay');
 }
 
 // 提交易支付表单
@@ -95,7 +95,7 @@ const SubscriptionPlansCard = ({
   enableStripeTopUp = false,
   enableCreemTopUp = false,
   enableInfiniTopUp = false,
-  enableEpusdtTopUp = false,
+  enableEzpayTopUp = false,
   billingPreference,
   onChangeBillingPreference,
   activeSubscriptions = [],
@@ -108,7 +108,7 @@ const SubscriptionPlansCard = ({
   const [paying, setPaying] = useState(false);
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('');
   const [selectedInfiniMethod, setSelectedInfiniMethod] = useState('');
-  const [selectedEpusdtMethod, setSelectedEpusdtMethod] = useState('');
+  const [selectedEzpayMethod, setSelectedEzpayMethod] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   const epayMethods = useMemo(() => getEpayMethods(payMethods), [payMethods]);
@@ -116,8 +116,8 @@ const SubscriptionPlansCard = ({
     () => getInfiniMethods(payMethods),
     [payMethods],
   );
-  const epusdtMethods = useMemo(
-    () => getEpusdtMethods(payMethods),
+  const ezpayMethods = useMemo(
+    () => getEzpayMethods(payMethods),
     [payMethods],
   );
 
@@ -125,7 +125,7 @@ const SubscriptionPlansCard = ({
     setSelectedPlan(p);
     setSelectedEpayMethod(epayMethods?.[0]?.type || '');
     setSelectedInfiniMethod(infiniMethods?.[0]?.type || 'infini');
-    setSelectedEpusdtMethod(epusdtMethods?.[0]?.type || 'epusdt');
+    setSelectedEzpayMethod(ezpayMethods?.[0]?.type || 'epusdt');
     setOpen(true);
   };
 
@@ -258,14 +258,14 @@ const SubscriptionPlansCard = ({
     }
   };
 
-  const payEpusdt = async () => {
-    if (!selectedEpusdtMethod) {
+  const payEzpay = async () => {
+    if (!selectedEzpayMethod) {
       showError(t('请选择支付方式'));
       return;
     }
     setPaying(true);
     try {
-      const res = await API.post('/api/subscription/epusdt/pay', {
+      const res = await API.post('/api/subscription/ezpay/pay', {
         plan_id: selectedPlan.plan.id,
       });
       if (res.data?.message === 'success') {
@@ -769,10 +769,10 @@ const SubscriptionPlansCard = ({
         enableCreemTopUp={enableCreemTopUp}
         infiniMethods={infiniMethods}
         enableInfiniTopUp={enableInfiniTopUp}
-        epusdtMethods={epusdtMethods}
-        enableEpusdtTopUp={enableEpusdtTopUp}
-        selectedEpusdtMethod={selectedEpusdtMethod}
-        setSelectedEpusdtMethod={setSelectedEpusdtMethod}
+        ezpayMethods={ezpayMethods}
+        enableEzpayTopUp={enableEzpayTopUp}
+        selectedEzpayMethod={selectedEzpayMethod}
+        setSelectedEzpayMethod={setSelectedEzpayMethod}
         selectedInfiniMethod={selectedInfiniMethod}
         setSelectedInfiniMethod={setSelectedInfiniMethod}
         purchaseLimitInfo={
@@ -787,7 +787,7 @@ const SubscriptionPlansCard = ({
         onPayCreem={payCreem}
         onPayEpay={payEpay}
         onPayInfini={payInfini}
-        onPayEpusdt={payEpusdt}
+        onPayEzpay={payEzpay}
       />
     </>
   );
