@@ -103,19 +103,15 @@ func InitOptionMap() {
 	common.OptionMap["InfiniMinTopUp"] = strconv.Itoa(setting.InfiniMinTopUp)
 	common.OptionMap["InfiniOrderTTLSeconds"] = strconv.Itoa(setting.InfiniOrderTTLSeconds)
 	common.OptionMap["InfiniPayMethods"] = setting.InfiniPayMethods2JsonString()
-	common.OptionMap["EpusdtEnabled"] = strconv.FormatBool(setting.EpusdtEnabled)
-	common.OptionMap["EpusdtBaseURL"] = setting.EpusdtBaseURL
-	common.OptionMap["EpusdtPublicURL"] = setting.EpusdtPublicURL
-	common.OptionMap["EpusdtPID"] = setting.EpusdtPID
-	common.OptionMap["EpusdtSecretKey"] = setting.EpusdtSecretKey
-	common.OptionMap["EpusdtCurrency"] = setting.EpusdtCurrency
-	common.OptionMap["EpusdtToken"] = setting.EpusdtToken
-	common.OptionMap["EpusdtNetwork"] = setting.EpusdtNetwork
-	common.OptionMap["EpusdtPaymentType"] = setting.EpusdtPaymentType
-	common.OptionMap["EpusdtNotifyURL"] = setting.EpusdtNotifyURL
-	common.OptionMap["EpusdtReturnURL"] = setting.EpusdtReturnURL
-	common.OptionMap["EpusdtUnitPrice"] = strconv.FormatFloat(setting.EpusdtUnitPrice, 'f', -1, 64)
-	common.OptionMap["EpusdtMinTopUp"] = strconv.Itoa(setting.EpusdtMinTopUp)
+	common.OptionMap["EzpayEnabled"] = strconv.FormatBool(setting.EzpayEnabled)
+	common.OptionMap["EzpayBaseURL"] = setting.EzpayBaseURL
+	common.OptionMap["EzpayPublicURL"] = setting.EzpayPublicURL
+	common.OptionMap["EzpayPID"] = setting.EzpayPID
+	common.OptionMap["EzpaySecretKey"] = setting.EzpaySecretKey
+	common.OptionMap["EzpayNotifyURL"] = setting.EzpayNotifyURL
+	common.OptionMap["EzpayReturnURL"] = setting.EzpayReturnURL
+	common.OptionMap["EzpayUnitPrice"] = strconv.FormatFloat(setting.EzpayUnitPrice, 'f', -1, 64)
+	common.OptionMap["EzpayMinTopUp"] = strconv.Itoa(setting.EzpayMinTopUp)
 	common.OptionMap["WaffoEnabled"] = strconv.FormatBool(setting.WaffoEnabled)
 	common.OptionMap["WaffoApiKey"] = setting.WaffoApiKey
 	common.OptionMap["WaffoPrivateKey"] = setting.WaffoPrivateKey
@@ -439,32 +435,24 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.InfiniMinTopUp, _ = strconv.Atoi(value)
 	case "InfiniOrderTTLSeconds":
 		setting.InfiniOrderTTLSeconds, _ = strconv.Atoi(value)
-	case "EpusdtEnabled":
-		setting.EpusdtEnabled = value == "true"
-	case "EpusdtBaseURL":
-		setting.EpusdtBaseURL = value
-	case "EpusdtPublicURL":
-		setting.EpusdtPublicURL = value
-	case "EpusdtPID":
-		setting.EpusdtPID = value
-	case "EpusdtSecretKey":
-		setting.EpusdtSecretKey = value
-	case "EpusdtCurrency":
-		setting.EpusdtCurrency = value
-	case "EpusdtToken":
-		setting.EpusdtToken = value
-	case "EpusdtNetwork":
-		setting.EpusdtNetwork = value
-	case "EpusdtPaymentType":
-		setting.EpusdtPaymentType = value
-	case "EpusdtNotifyURL":
-		setting.EpusdtNotifyURL = value
-	case "EpusdtReturnURL":
-		setting.EpusdtReturnURL = value
-	case "EpusdtUnitPrice":
-		setting.EpusdtUnitPrice, _ = strconv.ParseFloat(value, 64)
-	case "EpusdtMinTopUp":
-		setting.EpusdtMinTopUp, _ = strconv.Atoi(value)
+	case "EzpayEnabled":
+		setting.EzpayEnabled = value == "true"
+	case "EzpayBaseURL":
+		setting.EzpayBaseURL = value
+	case "EzpayPublicURL":
+		setting.EzpayPublicURL = value
+	case "EzpayPID":
+		setting.EzpayPID = value
+	case "EzpaySecretKey":
+		setting.EzpaySecretKey = value
+	case "EzpayNotifyURL":
+		setting.EzpayNotifyURL = value
+	case "EzpayReturnURL":
+		setting.EzpayReturnURL = value
+	case "EzpayUnitPrice":
+		setting.EzpayUnitPrice, _ = strconv.ParseFloat(value, 64)
+	case "EzpayMinTopUp":
+		setting.EzpayMinTopUp, _ = strconv.Atoi(value)
 	case "WaffoEnabled":
 		setting.WaffoEnabled = value == "true"
 	case "WaffoApiKey":

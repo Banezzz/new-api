@@ -27,7 +27,7 @@ const (
 	PaymentMethodStripe       = "stripe"
 	PaymentMethodCreem        = "creem"
 	PaymentMethodInfini       = "infini"
-	PaymentMethodEpusdt       = "epusdt"
+	PaymentMethodEzpay        = "ezpay"
 	PaymentMethodWaffo        = "waffo"
 	PaymentMethodWaffoPancake = "waffo_pancake"
 )
@@ -640,7 +640,7 @@ func RechargeInfini(tradeNo string, callerIp string) (err error) {
 	return nil
 }
 
-func RechargeEpusdt(tradeNo string, callerIp string) (err error) {
+func RechargeEzpay(tradeNo string, callerIp string) (err error) {
 	if tradeNo == "" {
 		return errors.New("未提供支付单号")
 	}
@@ -659,7 +659,7 @@ func RechargeEpusdt(tradeNo string, callerIp string) (err error) {
 			return errors.New("充值订单不存在")
 		}
 
-		if topUp.PaymentMethod != PaymentMethodEpusdt {
+		if topUp.PaymentMethod != PaymentMethodEzpay {
 			return ErrPaymentMethodMismatch
 		}
 
@@ -690,12 +690,12 @@ func RechargeEpusdt(tradeNo string, callerIp string) (err error) {
 	})
 
 	if err != nil {
-		common.SysError("epusdt topup failed: " + err.Error())
+		common.SysError("ezpay topup failed: " + err.Error())
 		return errors.New("充值失败，请稍后重试")
 	}
 
 	if quotaToAdd > 0 {
-		RecordTopupLog(topUp.UserId, fmt.Sprintf("EPUSDT充值成功，充值额度: %v，支付金额: %.2f", logger.FormatQuota(quotaToAdd), topUp.Money), callerIp, topUp.PaymentMethod, PaymentMethodEpusdt)
+		RecordTopupLog(topUp.UserId, fmt.Sprintf("EZPay充值成功，充值额度: %v，支付金额: %.2f", logger.FormatQuota(quotaToAdd), topUp.Money), callerIp, topUp.PaymentMethod, PaymentMethodEzpay)
 	}
 
 	return nil

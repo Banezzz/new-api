@@ -3,7 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
-	"crypto/md5" // #nosec G401,G501 -- EPUSDT protocol requires MD5 signatures.
+	"crypto/md5" // #nosec G401,G501 -- EZPay protocol requires MD5 signatures.
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -19,16 +19,16 @@ import (
 	"github.com/QuantumNous/new-api/setting"
 )
 
-const EpusdtDefaultBaseURL = "http://epusdt:8001"
+const EzpayDefaultBaseURL = "http://ezpay:8001"
 
-type EpusdtClient struct {
+type EzpayClient struct {
 	BaseURL   string
 	PID       string
 	SecretKey string
 	Client    *http.Client
 }
 
-type EpusdtCreateTransactionRequest struct {
+type EzpayCreateTransactionRequest struct {
 	OrderID     string
 	Currency    string
 	Token       string
@@ -40,7 +40,7 @@ type EpusdtCreateTransactionRequest struct {
 	PaymentType string
 }
 
-type EpusdtCreateTransactionResponse struct {
+type EzpayCreateTransactionResponse struct {
 	TradeID        string  `json:"trade_id"`
 	OrderID        string  `json:"order_id"`
 	Amount         float64 `json:"amount"`
@@ -52,7 +52,7 @@ type EpusdtCreateTransactionResponse struct {
 	PaymentURL     string  `json:"payment_url"`
 }
 
-type EpusdtOrderNotifyEvent struct {
+type EzpayOrderNotifyEvent struct {
 	PID                string  `json:"pid"`
 	TradeID            string  `json:"trade_id"`
 	OrderID            string  `json:"order_id"`
@@ -65,17 +65,17 @@ type EpusdtOrderNotifyEvent struct {
 	Status             int     `json:"status"`
 }
 
-type epusdtAPIResponseEnvelope struct {
+type ezpayAPIResponseEnvelope struct {
 	StatusCode int             `json:"status_code"`
 	Message    string          `json:"message"`
 	Data       json.RawMessage `json:"data"`
 }
 
-func NewConfiguredEpusdtClient() (*EpusdtClient, error) {
-	pid := strings.TrimSpace(setting.EpusdtPID)
-	secretKey := strings.TrimSpace(setting.EpusdtSecretKey)
+func NewConfiguredEzpayClient() (*EzpayClient, error) {
+	pid := strings.TrimSpace(setting.EzpayPID)
+	secretKey := strings.TrimSpace(setting.EzpaySecretKey)
 	if pid == "" || secretKey == "" {
-		return nil, fmt.Errorf("epusdt credentials are not configured")
+		return nil, fmt.Errorf("ezpay credentials are not configured")
 	}
 
 	client := GetHttpClient()
@@ -83,24 +83,24 @@ func NewConfiguredEpusdtClient() (*EpusdtClient, error) {
 		client = http.DefaultClient
 	}
 
-	return &EpusdtClient{
-		BaseURL:   resolveEpusdtBaseURL(),
+	return &EzpayClient{
+		BaseURL:   resolveEzpayBaseURL(),
 		PID:       pid,
 		SecretKey: secretKey,
 		Client:    client,
 	}, nil
 }
 
-func resolveEpusdtBaseURL() string {
-	if baseURL := strings.TrimSpace(setting.EpusdtBaseURL); baseURL != "" {
+func resolveEzpayBaseURL() string {
+	if baseURL := strings.TrimSpace(setting.EzpayBaseURL); baseURL != "" {
 		return strings.TrimRight(baseURL, "/")
 	}
-	return EpusdtDefaultBaseURL
+	return EzpayDefaultBaseURL
 }
 
-func (c *EpusdtClient) CreateTransaction(ctx context.Context, req *EpusdtCreateTransactionRequest) (*EpusdtCreateTransactionResponse, error) {
+func (c *EzpayClient) CreateTransaction(ctx context.Context, req *EzpayCreateTransactionRequest) (*EzpayCreateTransactionResponse, error) {
 	if req == nil {
-		return nil, errors.New("epusdt create transaction request is nil")
+		return nil, errors.New("ezpay create transaction request is nil")
 	}
 	payload := map[string]any{
 		"pid":          c.PID,
@@ -114,21 +114,21 @@ func (c *EpusdtClient) CreateTransaction(ctx context.Context, req *EpusdtCreateT
 		"name":         strings.TrimSpace(req.Name),
 		"payment_type": strings.TrimSpace(req.PaymentType),
 	}
-	signature, err := SignEpusdtParams(payload, c.SecretKey)
+	signature, err := SignEzpayParams(payload, c.SecretKey)
 	if err != nil {
 		return nil, err
 	}
 	payload["signature"] = signature
 
-	var resp EpusdtCreateTransactionResponse
+	var resp EzpayCreateTransactionResponse
 	if err := c.requestJSON(ctx, http.MethodPost, "/payments/gmpay/v1/order/create-transaction", payload, &resp); err != nil {
 		return nil, err
 	}
-	resp.PaymentURL = ResolveEpusdtPublicPaymentURL(resp.PaymentURL)
+	resp.PaymentURL = ResolveEzpayPublicPaymentURL(resp.PaymentURL)
 	return &resp, nil
 }
 
-func (c *EpusdtClient) requestJSON(ctx context.Context, method string, path string, payload any, out any) error {
+func (c *EzpayClient) requestJSON(ctx context.Context, method string, path string, payload any, out any) error {
 	var body []byte
 	var err error
 	if payload != nil {
@@ -157,19 +157,19 @@ func (c *EpusdtClient) requestJSON(ctx context.Context, method string, path stri
 		return err
 	}
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		return fmt.Errorf("epusdt api request failed: status=%d body=%s", httpResp.StatusCode, string(respBody))
+		return fmt.Errorf("ezpay api request failed: status=%d body=%s", httpResp.StatusCode, string(respBody))
 	}
 	if out == nil || len(respBody) == 0 {
 		return nil
 	}
-	return unmarshalEpusdtResponse(respBody, out)
+	return unmarshalEzpayResponse(respBody, out)
 }
 
-func unmarshalEpusdtResponse(respBody []byte, out any) error {
-	var envelope epusdtAPIResponseEnvelope
+func unmarshalEzpayResponse(respBody []byte, out any) error {
+	var envelope ezpayAPIResponseEnvelope
 	if err := common.Unmarshal(respBody, &envelope); err == nil && envelope.StatusCode != 0 {
 		if envelope.StatusCode != http.StatusOK {
-			return fmt.Errorf("epusdt api request failed: code=%d message=%s", envelope.StatusCode, strings.TrimSpace(envelope.Message))
+			return fmt.Errorf("ezpay api request failed: code=%d message=%s", envelope.StatusCode, strings.TrimSpace(envelope.Message))
 		}
 		if len(envelope.Data) == 0 || string(envelope.Data) == "null" {
 			return nil
@@ -179,10 +179,10 @@ func unmarshalEpusdtResponse(respBody []byte, out any) error {
 	return common.Unmarshal(respBody, out)
 }
 
-func SignEpusdtParams(params map[string]any, secretKey string) (string, error) {
+func SignEzpayParams(params map[string]any, secretKey string) (string, error) {
 	secretKey = strings.TrimSpace(secretKey)
 	if secretKey == "" {
-		return "", errors.New("epusdt secret key is empty")
+		return "", errors.New("ezpay secret key is empty")
 	}
 
 	pairs := make([]string, 0, len(params))
@@ -190,7 +190,7 @@ func SignEpusdtParams(params map[string]any, secretKey string) (string, error) {
 		if key == "signature" || value == nil {
 			continue
 		}
-		valueStr, err := epusdtSignatureValue(value)
+		valueStr, err := ezpaySignatureValue(value)
 		if err != nil {
 			return "", err
 		}
@@ -205,7 +205,7 @@ func SignEpusdtParams(params map[string]any, secretKey string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-func epusdtSignatureValue(value any) (string, error) {
+func ezpaySignatureValue(value any) (string, error) {
 	switch v := value.(type) {
 	case string:
 		return v, nil
@@ -238,11 +238,11 @@ func epusdtSignatureValue(value any) (string, error) {
 	case json.Number:
 		return v.String(), nil
 	default:
-		return "", fmt.Errorf("unsupported epusdt signature value type %T", value)
+		return "", fmt.Errorf("unsupported ezpay signature value type %T", value)
 	}
 }
 
-func VerifyEpusdtWebhookSignature(event *EpusdtOrderNotifyEvent, secretKey string) bool {
+func VerifyEzpayWebhookSignature(event *EzpayOrderNotifyEvent, secretKey string) bool {
 	if event == nil || strings.TrimSpace(event.Signature) == "" || strings.TrimSpace(secretKey) == "" {
 		return false
 	}
@@ -257,16 +257,16 @@ func VerifyEpusdtWebhookSignature(event *EpusdtOrderNotifyEvent, secretKey strin
 		"block_transaction_id": event.BlockTransactionID,
 		"status":               event.Status,
 	}
-	expected, err := SignEpusdtParams(params, secretKey)
+	expected, err := SignEzpayParams(params, secretKey)
 	if err != nil {
 		return false
 	}
 	return strings.EqualFold(expected, event.Signature)
 }
 
-func ResolveEpusdtPublicPaymentURL(rawPaymentURL string) string {
+func ResolveEzpayPublicPaymentURL(rawPaymentURL string) string {
 	rawPaymentURL = strings.TrimSpace(rawPaymentURL)
-	publicBase := strings.TrimSpace(setting.EpusdtPublicURL)
+	publicBase := strings.TrimSpace(setting.EzpayPublicURL)
 	if rawPaymentURL == "" || publicBase == "" {
 		return rawPaymentURL
 	}
