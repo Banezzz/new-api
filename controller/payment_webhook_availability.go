@@ -111,32 +111,29 @@ func isInfiniWebhookEnabled() bool {
 	return isInfiniTopUpEnabled()
 }
 
-func isEpusdtTopUpEnabled() bool {
-	if !setting.EpusdtEnabled {
+func isEzpayTopUpEnabled() bool {
+	if !setting.EzpayEnabled {
 		return false
 	}
 
-	return strings.TrimSpace(setting.EpusdtPID) != "" &&
-		strings.TrimSpace(setting.EpusdtSecretKey) != "" &&
-		strings.TrimSpace(setting.EpusdtCurrency) != "" &&
-		strings.TrimSpace(setting.EpusdtToken) != "" &&
-		strings.TrimSpace(setting.EpusdtNetwork) != "" &&
-		isEpusdtCallbackAddressConfigured()
+	return strings.TrimSpace(setting.EzpayPID) != "" &&
+		strings.TrimSpace(setting.EzpaySecretKey) != "" &&
+		isEzpayCallbackAddressConfigured()
 }
 
-func isEpusdtWebhookConfigured() bool {
-	return strings.TrimSpace(setting.EpusdtPID) != "" &&
-		strings.TrimSpace(setting.EpusdtSecretKey) != ""
+func isEzpayWebhookConfigured() bool {
+	return strings.TrimSpace(setting.EzpayPID) != "" &&
+		strings.TrimSpace(setting.EzpaySecretKey) != ""
 }
 
-func isEpusdtCallbackAddressConfigured() bool {
-	return strings.TrimSpace(setting.EpusdtNotifyURL) != "" ||
+func isEzpayCallbackAddressConfigured() bool {
+	return strings.TrimSpace(setting.EzpayNotifyURL) != "" ||
 		strings.TrimSpace(operation_setting.CustomCallbackAddress) != "" ||
 		strings.TrimSpace(system_setting.ServerAddress) != ""
 }
 
-func isEpusdtWebhookEnabled() bool {
-	return setting.EpusdtEnabled && isEpusdtWebhookConfigured()
+func isEzpayWebhookEnabled() bool {
+	return setting.EzpayEnabled && isEzpayWebhookConfigured()
 }
 
 func isEpayTopUpEnabled() bool {

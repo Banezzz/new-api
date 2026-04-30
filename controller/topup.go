@@ -114,22 +114,22 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 	}
 
-	enableEpusdt := isEpusdtTopUpEnabled()
-	if enableEpusdt {
-		hasEpusdt := false
+	enableEzpay := isEzpayTopUpEnabled()
+	if enableEzpay {
+		hasEzpay := false
 		for _, method := range payMethods {
-			if method["type"] == model.PaymentMethodEpusdt {
-				hasEpusdt = true
+			if method["type"] == model.PaymentMethodEzpay {
+				hasEzpay = true
 				break
 			}
 		}
 
-		if !hasEpusdt {
+		if !hasEzpay {
 			payMethods = append(payMethods, map[string]string{
-				"name":      "EPUSDT",
-				"type":      model.PaymentMethodEpusdt,
+				"name":      "EZPay",
+				"type":      model.PaymentMethodEzpay,
 				"color":     "rgba(var(--semi-green-5), 1)",
-				"min_topup": strconv.Itoa(setting.EpusdtMinTopUp),
+				"min_topup": strconv.Itoa(setting.EzpayMinTopUp),
 			})
 		}
 	}
@@ -139,7 +139,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"enable_stripe_topup":        isStripeTopUpEnabled(),
 		"enable_creem_topup":         isCreemTopUpEnabled(),
 		"enable_infini_topup":        enableInfini,
-		"enable_epusdt_topup":        enableEpusdt,
+		"enable_ezpay_topup":         enableEzpay,
 		"enable_waffo_topup":         enableWaffo,
 		"enable_waffo_pancake_topup": enableWaffoPancake,
 		"waffo_pay_methods": func() interface{} {
@@ -154,9 +154,8 @@ func GetTopUpInfo(c *gin.Context) {
 		"stripe_min_topup":        setting.StripeMinTopUp,
 		"infini_unit_price":       setting.InfiniUnitPrice,
 		"infini_min_topup":        setting.InfiniMinTopUp,
-		"epusdt_unit_price":       setting.EpusdtUnitPrice,
-		"epusdt_min_topup":        setting.EpusdtMinTopUp,
-		"epusdt_currency":         setting.EpusdtCurrency,
+		"ezpay_unit_price":        setting.EzpayUnitPrice,
+		"ezpay_min_topup":         setting.EzpayMinTopUp,
 		"waffo_min_topup":         setting.WaffoMinTopUp,
 		"waffo_pancake_min_topup": setting.WaffoPancakeMinTopUp,
 		"amount_options":          operation_setting.GetPaymentSetting().AmountOptions,
@@ -178,7 +177,7 @@ var nonEpayPaymentMethodsForCallback = []string{
 	model.PaymentMethodStripe,
 	model.PaymentMethodCreem,
 	model.PaymentMethodInfini,
-	model.PaymentMethodEpusdt,
+	model.PaymentMethodEzpay,
 	model.PaymentMethodWaffo,
 	model.PaymentMethodWaffoPancake,
 }
