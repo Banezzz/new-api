@@ -48,14 +48,24 @@ const SubscriptionPurchaseModal = ({
   paying,
   selectedEpayMethod,
   setSelectedEpayMethod,
+  selectedInfiniMethod,
+  setSelectedInfiniMethod,
+  selectedEzpayMethod,
+  setSelectedEzpayMethod,
   epayMethods = [],
+  infiniMethods = [],
+  ezpayMethods = [],
   enableOnlineTopUp = false,
   enableStripeTopUp = false,
   enableCreemTopUp = false,
+  enableInfiniTopUp = false,
+  enableEzpayTopUp = false,
   purchaseLimitInfo = null,
   onPayStripe,
   onPayCreem,
   onPayEpay,
+  onPayInfini,
+  onPayEzpay,
 }) => {
   const plan = selectedPlan?.plan;
   const totalAmount = Number(plan?.total_amount || 0);
@@ -69,7 +79,10 @@ const SubscriptionPurchaseModal = ({
   const hasStripe = enableStripeTopUp && !!plan?.stripe_price_id;
   const hasCreem = enableCreemTopUp && !!plan?.creem_product_id;
   const hasEpay = enableOnlineTopUp && epayMethods.length > 0;
-  const hasAnyPayment = hasStripe || hasCreem || hasEpay;
+  const hasInfini = enableInfiniTopUp && infiniMethods.length > 0;
+  const hasEzpay = enableEzpayTopUp && ezpayMethods.length > 0;
+  const hasAnyPayment =
+    hasStripe || hasCreem || hasEpay || hasInfini || hasEzpay;
   const purchaseLimit = Number(purchaseLimitInfo?.limit || 0);
   const purchaseCount = Number(purchaseLimitInfo?.count || 0);
   const purchaseLimitReached =
@@ -92,73 +105,74 @@ const SubscriptionPurchaseModal = ({
       {plan ? (
         <div className='space-y-4 pb-10'>
           {/* 套餐信息 */}
-          <Card className='!rounded-xl !border-0 bg-slate-50 dark:bg-slate-800'>
+          <Card className='!rounded-xl !border-0 bg-semi-color-bg-2'>
             <div className='space-y-3'>
               <div className='flex justify-between items-center'>
-                <Text strong className='text-slate-700 dark:text-slate-200'>
+                <Text strong className='text-semi-color-text-0'>
                   {t('套餐名称')}：
                 </Text>
                 <Typography.Text
                   ellipsis={{ rows: 1, showTooltip: true }}
-                  className='text-slate-900 dark:text-slate-100'
+                  className='text-semi-color-text-0'
                   style={{ maxWidth: 200 }}
                 >
                   {plan.title}
                 </Typography.Text>
               </div>
               <div className='flex justify-between items-center'>
-                <Text strong className='text-slate-700 dark:text-slate-200'>
+                <Text strong className='text-semi-color-text-0'>
                   {t('有效期')}：
                 </Text>
                 <div className='flex items-center'>
-                  <CalendarClock size={14} className='mr-1 text-slate-500' />
-                  <Text className='text-slate-900 dark:text-slate-100'>
+                  <CalendarClock
+                    size={14}
+                    className='mr-1 text-semi-color-text-2'
+                  />
+                  <Text className='text-semi-color-text-0'>
                     {formatSubscriptionDuration(plan, t)}
                   </Text>
                 </div>
               </div>
               {formatSubscriptionResetPeriod(plan, t) !== t('不重置') && (
                 <div className='flex justify-between items-center'>
-                  <Text strong className='text-slate-700 dark:text-slate-200'>
+                  <Text strong className='text-semi-color-text-0'>
                     {t('重置周期')}：
                   </Text>
-                  <Text className='text-slate-900 dark:text-slate-100'>
+                  <Text className='text-semi-color-text-0'>
                     {formatSubscriptionResetPeriod(plan, t)}
                   </Text>
                 </div>
               )}
               <div className='flex justify-between items-center'>
-                <Text strong className='text-slate-700 dark:text-slate-200'>
+                <Text strong className='text-semi-color-text-0'>
                   {t('总额度')}：
                 </Text>
                 <div className='flex items-center'>
-                  <Package size={14} className='mr-1 text-slate-500' />
+                  <Package size={14} className='mr-1 text-semi-color-text-2' />
                   {totalAmount > 0 ? (
                     <Tooltip content={`${t('原生额度')}：${totalAmount}`}>
-                      <Text className='text-slate-900 dark:text-slate-100'>
+                      <Text className='text-semi-color-text-0'>
                         {renderQuota(totalAmount)}
                       </Text>
                     </Tooltip>
                   ) : (
-                    <Text className='text-slate-900 dark:text-slate-100'>
-                      {t('不限')}
-                    </Text>
+                    <Text className='text-semi-color-text-0'>{t('不限')}</Text>
                   )}
                 </div>
               </div>
               {plan?.upgrade_group ? (
                 <div className='flex justify-between items-center'>
-                  <Text strong className='text-slate-700 dark:text-slate-200'>
+                  <Text strong className='text-semi-color-text-0'>
                     {t('升级分组')}：
                   </Text>
-                  <Text className='text-slate-900 dark:text-slate-100'>
+                  <Text className='text-semi-color-text-0'>
                     {plan.upgrade_group}
                   </Text>
                 </div>
               ) : null}
               <Divider margin={8} />
               <div className='flex justify-between items-center'>
-                <Text strong className='text-slate-700 dark:text-slate-200'>
+                <Text strong className='text-semi-color-text-0'>
                   {t('应付金额')}：
                 </Text>
                 <Text strong className='text-xl text-purple-600'>
@@ -212,6 +226,58 @@ const SubscriptionPurchaseModal = ({
                       Creem
                     </Button>
                   )}
+                </div>
+              )}
+
+              {hasInfini && (
+                <div className='flex gap-2'>
+                  <Select
+                    value={selectedInfiniMethod}
+                    onChange={setSelectedInfiniMethod}
+                    style={{ flex: 1 }}
+                    size='default'
+                    placeholder={t('选择支付方式')}
+                    optionList={infiniMethods.map((m) => ({
+                      value: m.type,
+                      label: m.name || m.type,
+                    }))}
+                    disabled={purchaseLimitReached}
+                  />
+                  <Button
+                    theme='solid'
+                    type='primary'
+                    onClick={onPayInfini}
+                    loading={paying}
+                    disabled={!selectedInfiniMethod || purchaseLimitReached}
+                  >
+                    Infini
+                  </Button>
+                </div>
+              )}
+
+              {hasEzpay && (
+                <div className='flex gap-2'>
+                  <Select
+                    value={selectedEzpayMethod}
+                    onChange={setSelectedEzpayMethod}
+                    style={{ flex: 1 }}
+                    size='default'
+                    placeholder={t('选择支付方式')}
+                    optionList={ezpayMethods.map((m) => ({
+                      value: m.type,
+                      label: m.name || m.type,
+                    }))}
+                    disabled={purchaseLimitReached}
+                  />
+                  <Button
+                    theme='solid'
+                    type='primary'
+                    onClick={onPayEzpay}
+                    loading={paying}
+                    disabled={!selectedEzpayMethod || purchaseLimitReached}
+                  >
+                    EZPay
+                  </Button>
                 </div>
               )}
 

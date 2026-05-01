@@ -59,9 +59,20 @@ const TopUp = () => {
     statusState?.status?.enable_online_topup || false,
   );
   const [priceRatio, setPriceRatio] = useState(statusState?.status?.price || 1);
+  const stripeUnitPrice = Number(statusState?.status?.stripe_unit_price || 1);
+  const infiniUnitPrice = Number(statusState?.status?.infini_unit_price || 1);
+  const [ezpayUnitPrice, setEzpayUnitPrice] = useState(
+    Number(statusState?.status?.ezpay_unit_price || 1),
+  );
 
   const [enableStripeTopUp, setEnableStripeTopUp] = useState(
     statusState?.status?.enable_stripe_topup || false,
+  );
+  const [enableInfiniTopUp, setEnableInfiniTopUp] = useState(
+    statusState?.status?.enable_infini_topup || false,
+  );
+  const [enableEzpayTopUp, setEnableEzpayTopUp] = useState(
+    statusState?.status?.enable_ezpay_topup || false,
   );
   const [statusLoading, setStatusLoading] = useState(true);
 
@@ -127,6 +138,79 @@ const TopUp = () => {
   const getPayMethodConfig = (payment) =>
     confirmPayMethods.find((method) => method.type === payment);
 
+  const isInfiniPaymentMethod = (payment) =>
+    typeof payment === 'string' && payment.startsWith('infini');
+
+  const isEzpayPaymentMethod = (payment) => payment === 'ezpay';
+
+  const isDollarPaymentMethod = (payment) =>
+    payment === 'stripe' ||
+    isInfiniPaymentMethod(payment) ||
+    isEzpayPaymentMethod(payment); // EZPay 默认使用 USD
+
+  const getEffectivePaymentMethod = (payment = payWay) => {
+    if (payment) {
+      return payment;
+    }
+    const infiniMethod = confirmPayMethods.find((method) =>
+      isInfiniPaymentMethod(method.type),
+    );
+    if (infiniMethod) {
+      return infiniMethod.type;
+    }
+    if (confirmPayMethods.length > 0) {
+      return confirmPayMethods[0].type;
+    }
+    if (enableStripeTopUp) {
+      return 'stripe';
+    }
+    if (enableWaffoPancakeTopUp) {
+      return 'waffo_pancake';
+    }
+    if (enableOnlineTopUp) {
+      return 'alipay';
+    }
+    return '';
+  };
+
+  const getPaymentUnitPrice = (payment = getEffectivePaymentMethod()) => {
+    if (payment === 'stripe') {
+      return stripeUnitPrice;
+    }
+    if (isInfiniPaymentMethod(payment)) {
+      return infiniUnitPrice;
+    }
+    if (isEzpayPaymentMethod(payment)) {
+      return ezpayUnitPrice;
+    }
+    return priceRatio;
+  };
+
+  const formatAmountValue = (
+    value,
+    payment = getEffectivePaymentMethod(),
+    digits = 2,
+  ) => {
+    const normalizedAmount = Number(value || 0);
+    if (isDollarPaymentMethod(payment)) {
+      return `$${normalizedAmount.toFixed(digits)}`;
+    }
+    return `${normalizedAmount.toFixed(digits)} ${t('元')}`;
+  };
+
+  const getPresetPricing = (preset, payment = getEffectivePaymentMethod()) => {
+    const discount =
+      preset.discount || topupInfo?.discount?.[preset.value] || 1;
+    const originalAmount = preset.value * getPaymentUnitPrice(payment);
+    const actualAmount = originalAmount * discount;
+    return {
+      discount,
+      originalAmount,
+      actualAmount,
+      saveAmount: originalAmount - actualAmount,
+    };
+  };
+
   const getPaymentMinTopUp = (payment) => {
     const configuredMinTopUp = Number(getPayMethodConfig(payment)?.min_topup);
     return Number.isFinite(configuredMinTopUp) && configuredMinTopUp > 0
@@ -138,6 +222,12 @@ const TopUp = () => {
     if (payment === 'stripe') {
       return getStripeAmount(value);
     }
+    if (typeof payment === 'string' && payment.startsWith('infini')) {
+      return getInfiniAmount(value, payment);
+    }
+    if (payment === 'ezpay') {
+      return getEzpayAmount(value);
+    }
     if (payment === 'waffo_pancake') {
       return getWaffoPancakeAmount(value);
     }
@@ -146,6 +236,9 @@ const TopUp = () => {
     }
     return getAmount(value);
   };
+
+  const refreshAmountByCurrentPayment = async (value, payment) =>
+    requestAmountByPayment(payment || getEffectivePaymentMethod(), value);
 
   const topUp = async () => {
     if (redemptionCode === '') {
@@ -195,6 +288,16 @@ const TopUp = () => {
     if (payment === 'stripe') {
       if (!enableStripeTopUp) {
         showError(t('管理员未开启Stripe充值！'));
+        return;
+      }
+    } else if (payment.startsWith('infini')) {
+      if (!enableInfiniTopUp) {
+        showError(t('管理员未开启 Infini 充值！'));
+        return;
+      }
+    } else if (payment === 'ezpay') {
+      if (!enableEzpayTopUp) {
+        showError(t('管理员未开启 EZPay 充值！'));
         return;
       }
     } else if (payment === 'waffo_pancake') {
@@ -249,6 +352,59 @@ const TopUp = () => {
       setConfirmLoading(true);
       try {
         await waffoTopUp(Number.isFinite(payMethodIndex) ? payMethodIndex : 0);
+      } finally {
+        setOpen(false);
+        setConfirmLoading(false);
+      }
+      return;
+    }
+
+    if (payWay.startsWith('infini')) {
+      setConfirmLoading(true);
+      try {
+        if (amount === 0) {
+          await getInfiniAmount(undefined, payWay);
+        }
+        const res = await API.post('/api/user/infini/pay', {
+          amount: parseInt(topUpCount),
+          payment_method: payWay,
+        });
+        if (res?.data?.message === 'success') {
+          window.open(res.data.data?.checkout_url, '_blank');
+        } else {
+          showError(res?.data?.data || t('支付失败'));
+        }
+      } catch (error) {
+        showError(t('支付请求失败'));
+      } finally {
+        setOpen(false);
+        setConfirmLoading(false);
+      }
+      return;
+    }
+
+    if (payWay === 'ezpay') {
+      setConfirmLoading(true);
+      try {
+        if (amount === 0) {
+          await getEzpayAmount();
+        }
+        const res = await API.post('/api/user/ezpay/pay', {
+          amount: parseInt(topUpCount),
+        });
+        if (res?.data?.message === 'success') {
+          const paymentUrl =
+            res.data.data?.payment_url || res.data.data?.checkout_url || '';
+          if (paymentUrl) {
+            window.open(paymentUrl, '_blank');
+          } else {
+            showError(t('支付请求失败'));
+          }
+        } else {
+          showError(res?.data?.data || t('支付失败'));
+        }
+      } catch (error) {
+        showError(t('支付请求失败'));
       } finally {
         setOpen(false);
         setConfirmLoading(false);
@@ -636,6 +792,8 @@ const TopUp = () => {
           const enableStripeTopUp = data.enable_stripe_topup || false;
           const enableOnlineTopUp = data.enable_online_topup || false;
           const enableCreemTopUp = data.enable_creem_topup || false;
+          const enableInfiniTopUp = data.enable_infini_topup || false;
+          const enableEzpayTopUp = data.enable_ezpay_topup || false;
           const enableWaffoTopUp = data.enable_waffo_topup || false;
           const enableWaffoPancakeTopUp =
             data.enable_waffo_pancake_topup || false;
@@ -643,14 +801,21 @@ const TopUp = () => {
             ? data.min_topup
             : enableStripeTopUp
               ? data.stripe_min_topup
-              : enableWaffoTopUp
-                ? data.waffo_min_topup
-                : enableWaffoPancakeTopUp
-                  ? data.waffo_pancake_min_topup
-                : 1;
+              : enableInfiniTopUp
+                ? data.infini_min_topup
+                : enableEzpayTopUp
+                  ? data.ezpay_min_topup
+                  : enableWaffoTopUp
+                    ? data.waffo_min_topup
+                    : enableWaffoPancakeTopUp
+                      ? data.waffo_pancake_min_topup
+                      : 1;
           setEnableOnlineTopUp(enableOnlineTopUp);
           setEnableStripeTopUp(enableStripeTopUp);
           setEnableCreemTopUp(enableCreemTopUp);
+          setEnableInfiniTopUp(enableInfiniTopUp);
+          setEnableEzpayTopUp(enableEzpayTopUp);
+          setEzpayUnitPrice(Number(data.ezpay_unit_price || 1));
           setEnableWaffoTopUp(enableWaffoTopUp);
           setWaffoPayMethods(data.waffo_pay_methods || []);
           setWaffoMinTopUp(data.waffo_min_topup || 1);
@@ -672,8 +837,17 @@ const TopUp = () => {
             setPresetAmounts(generatePresetAmounts(minTopUpValue));
           }
 
+          const defaultPaymentMethod =
+            payMethods.find((method) => method.type)?.type || '';
+          if (defaultPaymentMethod) {
+            setPayWay((currentPayWay) => currentPayWay || defaultPaymentMethod);
+          }
+
           // 初始化显示实付金额
-          getAmount(minTopUpValue);
+          await refreshAmountByCurrentPayment(
+            minTopUpValue,
+            defaultPaymentMethod,
+          );
         } catch (e) {
           setPayMethods([]);
         }
@@ -771,9 +945,8 @@ const TopUp = () => {
     }
   }, [statusState?.status]);
 
-  const renderAmount = () => {
-    return amount + ' ' + t('元');
-  };
+  const renderAmount = (payment = getEffectivePaymentMethod()) =>
+    formatAmountValue(amount, payment);
 
   const getAmount = async (value) => {
     if (value === undefined) {
@@ -828,6 +1001,61 @@ const TopUp = () => {
     }
   };
 
+  const getInfiniAmount = async (value, paymentMethod) => {
+    if (value === undefined) {
+      value = topUpCount;
+    }
+    setAmountLoading(true);
+    try {
+      const res = await API.post('/api/user/infini/amount', {
+        amount: parseFloat(value),
+        payment_method: paymentMethod || payWay || 'infini',
+      });
+      if (res !== undefined) {
+        const { message, data } = res.data;
+        if (message === 'success') {
+          setAmount(parseFloat(data));
+        } else {
+          setAmount(0);
+          Toast.error({ content: '错误：' + data, id: 'getAmount' });
+        }
+      } else {
+        showError(res);
+      }
+    } catch (err) {
+      // amount fetch failed silently
+    } finally {
+      setAmountLoading(false);
+    }
+  };
+
+  const getEzpayAmount = async (value) => {
+    if (value === undefined) {
+      value = topUpCount;
+    }
+    setAmountLoading(true);
+    try {
+      const res = await API.post('/api/user/ezpay/amount', {
+        amount: parseFloat(value),
+      });
+      if (res !== undefined) {
+        const { message, data } = res.data;
+        if (message === 'success') {
+          setAmount(parseFloat(data));
+        } else {
+          setAmount(0);
+          Toast.error({ content: '错误：' + data, id: 'getAmount' });
+        }
+      } else {
+        showError(res);
+      }
+    } catch (err) {
+      // amount fetch failed silently
+    } finally {
+      setAmountLoading(false);
+    }
+  };
+
   const handleCancel = () => {
     setOpen(false);
   };
@@ -850,14 +1078,13 @@ const TopUp = () => {
   };
 
   // 选择预设充值额度
-  const selectPresetAmount = (preset) => {
+  const selectPresetAmount = async (
+    preset,
+    payment = getEffectivePaymentMethod(),
+  ) => {
     setTopUpCount(preset.value);
     setSelectedPreset(preset.value);
-
-    // 计算实际支付金额，考虑折扣
-    const discount = preset.discount || topupInfo.discount[preset.value] || 1.0;
-    const discountedAmount = preset.value * priceRatio * discount;
-    setAmount(discountedAmount);
+    await refreshAmountByCurrentPayment(preset.value, payment);
   };
 
   // 格式化大数字显示
@@ -899,6 +1126,7 @@ const TopUp = () => {
         renderQuotaWithAmount={renderQuotaWithAmount}
         amountLoading={amountLoading}
         renderAmount={renderAmount}
+        formatAmount={formatAmountValue}
         payWay={payWay}
         payMethods={confirmPayMethods}
         amountNumber={amount}
@@ -946,6 +1174,8 @@ const TopUp = () => {
           t={t}
           enableOnlineTopUp={enableOnlineTopUp}
           enableStripeTopUp={enableStripeTopUp}
+          enableInfiniTopUp={enableInfiniTopUp}
+          enableEzpayTopUp={enableEzpayTopUp}
           enableCreemTopUp={enableCreemTopUp}
           creemProducts={creemProducts}
           creemPreTopUp={creemPreTopUp}
@@ -955,14 +1185,16 @@ const TopUp = () => {
           selectedPreset={selectedPreset}
           selectPresetAmount={selectPresetAmount}
           formatLargeNumber={formatLargeNumber}
-          priceRatio={priceRatio}
           topUpCount={topUpCount}
           minTopUp={minTopUp}
           renderQuotaWithAmount={renderQuotaWithAmount}
-          getAmount={getAmount}
+          getAmount={refreshAmountByCurrentPayment}
           setTopUpCount={setTopUpCount}
           setSelectedPreset={setSelectedPreset}
           renderAmount={renderAmount}
+          formatAmount={formatAmountValue}
+          getEffectivePaymentMethod={getEffectivePaymentMethod}
+          getPresetPricing={getPresetPricing}
           amountLoading={amountLoading}
           payMethods={confirmPayMethods}
           preTopUp={preTopUp}
@@ -977,7 +1209,6 @@ const TopUp = () => {
           userState={userState}
           renderQuota={renderQuota}
           statusLoading={statusLoading}
-          topupInfo={topupInfo}
           onOpenHistory={handleOpenHistory}
           subscriptionLoading={subscriptionLoading}
           subscriptionPlans={subscriptionPlans}

@@ -44,8 +44,25 @@ const { Text } = Typography;
 // 过滤易支付方式
 function getEpayMethods(payMethods = []) {
   return (payMethods || []).filter(
-    (m) => m?.type && m.type !== 'stripe' && m.type !== 'creem',
+    (m) =>
+      m?.type &&
+      m.type !== 'stripe' &&
+      m.type !== 'creem' &&
+      m.type !== 'ezpay' &&
+      m.type !== 'waffo_pancake' &&
+      !m.type.startsWith('waffo:') &&
+      !m.type.startsWith('infini'),
   );
+}
+
+function getInfiniMethods(payMethods = []) {
+  return (payMethods || []).filter(
+    (m) => m?.type && m.type.startsWith('infini'),
+  );
+}
+
+function getEzpayMethods(payMethods = []) {
+  return (payMethods || []).filter((m) => m?.type === 'ezpay');
 }
 
 // 提交易支付表单
@@ -77,6 +94,8 @@ const SubscriptionPlansCard = ({
   enableOnlineTopUp = false,
   enableStripeTopUp = false,
   enableCreemTopUp = false,
+  enableInfiniTopUp = false,
+  enableEzpayTopUp = false,
   billingPreference,
   onChangeBillingPreference,
   activeSubscriptions = [],
@@ -88,13 +107,25 @@ const SubscriptionPlansCard = ({
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [paying, setPaying] = useState(false);
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('');
+  const [selectedInfiniMethod, setSelectedInfiniMethod] = useState('');
+  const [selectedEzpayMethod, setSelectedEzpayMethod] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   const epayMethods = useMemo(() => getEpayMethods(payMethods), [payMethods]);
+  const infiniMethods = useMemo(
+    () => getInfiniMethods(payMethods),
+    [payMethods],
+  );
+  const ezpayMethods = useMemo(
+    () => getEzpayMethods(payMethods),
+    [payMethods],
+  );
 
   const openBuy = (p) => {
     setSelectedPlan(p);
     setSelectedEpayMethod(epayMethods?.[0]?.type || '');
+    setSelectedInfiniMethod(infiniMethods?.[0]?.type || 'infini');
+    setSelectedEzpayMethod(ezpayMethods?.[0]?.type || 'ezpay');
     setOpen(true);
   };
 
@@ -184,6 +215,69 @@ const SubscriptionPlansCard = ({
         submitEpayForm({ url: res.data.url, params: res.data.data });
         showSuccess(t('已发起支付'));
         closeBuy();
+      } else {
+        const errorMsg =
+          typeof res.data?.data === 'string'
+            ? res.data.data
+            : res.data?.message || t('支付失败');
+        showError(errorMsg);
+      }
+    } catch (e) {
+      showError(t('支付请求失败'));
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const payInfini = async () => {
+    if (!selectedInfiniMethod) {
+      showError(t('请选择支付方式'));
+      return;
+    }
+    setPaying(true);
+    try {
+      const res = await API.post('/api/subscription/infini/pay', {
+        plan_id: selectedPlan.plan.id,
+        payment_method: selectedInfiniMethod,
+      });
+      if (res.data?.message === 'success') {
+        window.open(res.data.data?.checkout_url, '_blank');
+        showSuccess(t('已打开支付页面'));
+        closeBuy();
+      } else {
+        const errorMsg =
+          typeof res.data?.data === 'string'
+            ? res.data.data
+            : res.data?.message || t('支付失败');
+        showError(errorMsg);
+      }
+    } catch (e) {
+      showError(t('支付请求失败'));
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const payEzpay = async () => {
+    if (!selectedEzpayMethod) {
+      showError(t('请选择支付方式'));
+      return;
+    }
+    setPaying(true);
+    try {
+      const res = await API.post('/api/subscription/ezpay/pay', {
+        plan_id: selectedPlan.plan.id,
+      });
+      if (res.data?.message === 'success') {
+        const paymentUrl =
+          res.data.data?.payment_url || res.data.data?.checkout_url || '';
+        if (paymentUrl) {
+          window.open(paymentUrl, '_blank');
+          showSuccess(t('已打开支付页面'));
+          closeBuy();
+        } else {
+          showError(t('支付请求失败'));
+        }
       } else {
         const errorMsg =
           typeof res.data?.data === 'string'
@@ -427,12 +521,12 @@ const SubscriptionPlansCard = ({
                             )}
                           </div>
                           {isActive && (
-                            <span className='text-gray-500'>
+                            <span className='text-semi-color-text-2'>
                               {t('剩余')} {remainDays} {t('天')}
                             </span>
                           )}
                         </div>
-                        <div className='text-xs text-gray-500 mb-2'>
+                        <div className='text-xs text-semi-color-text-2 mb-2'>
                           {isActive
                             ? t('至')
                             : isCancelled
@@ -443,14 +537,14 @@ const SubscriptionPlansCard = ({
                           ).toLocaleString()}
                         </div>
                         {isActive && subscription?.next_reset_time > 0 && (
-                          <div className='text-xs text-gray-500 mb-2'>
+                          <div className='text-xs text-semi-color-text-2 mb-2'>
                             {t('下一次重置')}:{' '}
                             {new Date(
                               subscription.next_reset_time * 1000,
                             ).toLocaleString()}
                           </div>
                         )}
-                        <div className='text-xs text-gray-500 mb-2'>
+                        <div className='text-xs text-semi-color-text-2 mb-2'>
                           {t('总额度')}:{' '}
                           {totalAmount > 0 ? (
                             <Tooltip
@@ -478,7 +572,7 @@ const SubscriptionPlansCard = ({
                 </div>
               </>
             ) : (
-              <div className='text-xs text-gray-500'>
+              <div className='text-xs text-semi-color-text-2'>
                 {t('购买套餐后即可享受模型权益')}
               </div>
             )}
@@ -580,7 +674,7 @@ const SubscriptionPlansCard = ({
                       <div className='flex flex-col items-start gap-1 pb-2'>
                         {planBenefits.map((item) => {
                           const content = (
-                            <div className='flex items-center gap-2 text-xs text-gray-500'>
+                            <div className='flex items-center gap-2 text-xs text-semi-color-text-2'>
                               <Badge dot type='tertiary' />
                               <span>{item.label}</span>
                             </div>
@@ -643,7 +737,7 @@ const SubscriptionPlansCard = ({
               })}
             </div>
           ) : (
-            <div className='text-center text-gray-400 text-sm py-4'>
+            <div className='text-center text-semi-color-text-2 text-sm py-4'>
               {t('暂无可购买套餐')}
             </div>
           )}
@@ -655,7 +749,7 @@ const SubscriptionPlansCard = ({
   return (
     <>
       {withCard ? (
-        <Card className='!rounded-2xl shadow-sm border-0'>{cardContent}</Card>
+        <Card className='!rounded-xl'>{cardContent}</Card>
       ) : (
         <div className='space-y-3'>{cardContent}</div>
       )}
@@ -673,6 +767,14 @@ const SubscriptionPlansCard = ({
         enableOnlineTopUp={enableOnlineTopUp}
         enableStripeTopUp={enableStripeTopUp}
         enableCreemTopUp={enableCreemTopUp}
+        infiniMethods={infiniMethods}
+        enableInfiniTopUp={enableInfiniTopUp}
+        ezpayMethods={ezpayMethods}
+        enableEzpayTopUp={enableEzpayTopUp}
+        selectedEzpayMethod={selectedEzpayMethod}
+        setSelectedEzpayMethod={setSelectedEzpayMethod}
+        selectedInfiniMethod={selectedInfiniMethod}
+        setSelectedInfiniMethod={setSelectedInfiniMethod}
         purchaseLimitInfo={
           selectedPlan?.plan?.id
             ? {
@@ -684,6 +786,8 @@ const SubscriptionPlansCard = ({
         onPayStripe={payStripe}
         onPayCreem={payCreem}
         onPayEpay={payEpay}
+        onPayInfini={payInfini}
+        onPayEzpay={payEzpay}
       />
     </>
   );
