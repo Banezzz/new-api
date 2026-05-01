@@ -5,6 +5,7 @@ import (
 
 	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
+	"github.com/QuantumNous/new-api/setting/system_setting"
 	"github.com/stretchr/testify/require"
 )
 
@@ -94,6 +95,56 @@ func TestWaffoWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
 
 	setting.WaffoSandboxApiKey = "sandbox_api"
 	require.True(t, isWaffoWebhookEnabled())
+}
+
+func TestInfiniWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
+	originalEnabled := setting.InfiniEnabled
+	originalSandbox := setting.InfiniSandbox
+	originalBaseURL := setting.InfiniBaseURL
+	originalKeyID := setting.InfiniKeyId
+	originalSecretKey := setting.InfiniSecretKey
+	originalWebhookSecret := setting.InfiniWebhookSecret
+	originalCustomCallbackAddress := operation_setting.CustomCallbackAddress
+	originalServerAddress := system_setting.ServerAddress
+	t.Cleanup(func() {
+		setting.InfiniEnabled = originalEnabled
+		setting.InfiniSandbox = originalSandbox
+		setting.InfiniBaseURL = originalBaseURL
+		setting.InfiniKeyId = originalKeyID
+		setting.InfiniSecretKey = originalSecretKey
+		setting.InfiniWebhookSecret = originalWebhookSecret
+		operation_setting.CustomCallbackAddress = originalCustomCallbackAddress
+		system_setting.ServerAddress = originalServerAddress
+		require.NoError(t, setting.SetInfiniPayMethods([]setting.InfiniPayMethod{{
+			Name:       "Infini",
+			Type:       "infini",
+			PayMethods: []int{1, 2},
+		}}))
+	})
+
+	setting.InfiniEnabled = true
+	setting.InfiniBaseURL = ""
+	setting.InfiniSandbox = true
+	setting.InfiniKeyId = "merchant_public"
+	setting.InfiniSecretKey = "merchant_secret"
+	setting.InfiniWebhookSecret = ""
+	operation_setting.CustomCallbackAddress = ""
+	system_setting.ServerAddress = ""
+	require.NoError(t, setting.SetInfiniPayMethods([]setting.InfiniPayMethod{{
+		Name:       "Infini",
+		Type:       "infini",
+		PayMethods: []int{1, 2},
+	}}))
+	require.False(t, isInfiniWebhookEnabled())
+
+	setting.InfiniWebhookSecret = "whsec_test"
+	require.False(t, isInfiniWebhookEnabled())
+
+	system_setting.ServerAddress = "https://console.example.com"
+	require.True(t, isInfiniWebhookEnabled())
+
+	setting.InfiniKeyId = ""
+	require.False(t, isInfiniWebhookEnabled())
 }
 
 func TestWaffoPancakeWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {

@@ -51,14 +51,14 @@ func insertSubscriptionOrderForPaymentGuardTest(t *testing.T, tradeNo string, us
 	require.NoError(t, order.Insert())
 }
 
-func insertTopUpForPaymentGuardTest(t *testing.T, tradeNo string, userID int, paymentProvider string) {
+func insertTopUpForPaymentGuardTest(t *testing.T, tradeNo string, userID int, paymentMethod string, paymentProvider string) {
 	t.Helper()
 	topUp := &TopUp{
 		UserId:          userID,
 		Amount:          2,
 		Money:           9.99,
 		TradeNo:         tradeNo,
-		PaymentMethod:   paymentProvider,
+		PaymentMethod:   paymentMethod,
 		PaymentProvider: paymentProvider,
 		Status:          common.TopUpStatusPending,
 		CreateTime:      time.Now().Unix(),
@@ -91,7 +91,7 @@ func TestRechargeWaffoPancake_RejectsMismatchedPaymentMethod(t *testing.T) {
 	truncateTables(t)
 
 	insertUserForPaymentGuardTest(t, 101, 0)
-	insertTopUpForPaymentGuardTest(t, "waffo-pancake-guard", 101, PaymentProviderStripe)
+	insertTopUpForPaymentGuardTest(t, "waffo-pancake-guard", 101, PaymentMethodWaffoPancake, PaymentProviderStripe)
 
 	err := RechargeWaffoPancake("waffo-pancake-guard")
 	require.Error(t, err)
@@ -100,6 +100,36 @@ func TestRechargeWaffoPancake_RejectsMismatchedPaymentMethod(t *testing.T) {
 	require.NotNil(t, topUp)
 	assert.Equal(t, common.TopUpStatusPending, topUp.Status)
 	assert.Equal(t, 0, getUserQuotaForPaymentGuardTest(t, 101))
+}
+
+func TestRechargeInfini_RejectsMismatchedPaymentProvider(t *testing.T) {
+	truncateTables(t)
+
+	insertUserForPaymentGuardTest(t, 102, 0)
+	insertTopUpForPaymentGuardTest(t, "infini-guard", 102, PaymentMethodInfini, PaymentProviderStripe)
+
+	err := RechargeInfini("infini-guard", "127.0.0.1")
+	require.Error(t, err)
+
+	topUp := GetTopUpByTradeNo("infini-guard")
+	require.NotNil(t, topUp)
+	assert.Equal(t, common.TopUpStatusPending, topUp.Status)
+	assert.Equal(t, 0, getUserQuotaForPaymentGuardTest(t, 102))
+}
+
+func TestRechargeEzpay_RejectsMismatchedPaymentProvider(t *testing.T) {
+	truncateTables(t)
+
+	insertUserForPaymentGuardTest(t, 103, 0)
+	insertTopUpForPaymentGuardTest(t, "ezpay-guard", 103, PaymentMethodEzpay, PaymentProviderStripe)
+
+	err := RechargeEzpay("ezpay-guard", "127.0.0.1")
+	require.Error(t, err)
+
+	topUp := GetTopUpByTradeNo("ezpay-guard")
+	require.NotNil(t, topUp)
+	assert.Equal(t, common.TopUpStatusPending, topUp.Status)
+	assert.Equal(t, 0, getUserQuotaForPaymentGuardTest(t, 103))
 }
 
 func TestUpdatePendingTopUpStatus_RejectsMismatchedPaymentProvider(t *testing.T) {
@@ -130,7 +160,7 @@ func TestUpdatePendingTopUpStatus_RejectsMismatchedPaymentProvider(t *testing.T)
 		t.Run(tc.name, func(t *testing.T) {
 			truncateTables(t)
 			insertUserForPaymentGuardTest(t, 150, 0)
-			insertTopUpForPaymentGuardTest(t, tc.tradeNo, 150, tc.storedPaymentProvider)
+			insertTopUpForPaymentGuardTest(t, tc.tradeNo, 150, tc.storedPaymentProvider, tc.storedPaymentProvider)
 
 			err := UpdatePendingTopUpStatus(tc.tradeNo, tc.expectedPaymentProvider, tc.targetStatus)
 			require.ErrorIs(t, err, ErrPaymentMethodMismatch)

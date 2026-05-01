@@ -90,10 +90,56 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 	}
 
+	enableInfini := isInfiniTopUpEnabled()
+	if enableInfini {
+		hasInfini := make(map[string]struct{}, len(payMethods))
+		for _, method := range payMethods {
+			if methodType := method["type"]; methodType != "" {
+				hasInfini[methodType] = struct{}{}
+			}
+		}
+		for _, method := range setting.GetInfiniPayMethods() {
+			if method.Type == "" || method.Name == "" {
+				continue
+			}
+			if _, ok := hasInfini[method.Type]; ok {
+				continue
+			}
+			payMethods = append(payMethods, map[string]string{
+				"name":      method.Name,
+				"type":      method.Type,
+				"color":     method.Color,
+				"min_topup": strconv.Itoa(setting.InfiniMinTopUp),
+			})
+		}
+	}
+
+	enableEzpay := isEzpayTopUpEnabled()
+	if enableEzpay {
+		hasEzpay := false
+		for _, method := range payMethods {
+			if method["type"] == model.PaymentMethodEzpay {
+				hasEzpay = true
+				break
+			}
+		}
+
+		if !hasEzpay {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "EZPay",
+				"type":      model.PaymentMethodEzpay,
+				"color":     "rgba(var(--semi-green-5), 1)",
+				"min_topup": strconv.Itoa(setting.EzpayMinTopUp),
+			})
+		}
+	}
+
 	data := gin.H{
 		"enable_online_topup":        isEpayTopUpEnabled(),
 		"enable_stripe_topup":        isStripeTopUpEnabled(),
 		"enable_creem_topup":         isCreemTopUpEnabled(),
+		"enable_infini_topup":        enableInfini,
+		"enable_ezpay_topup":         enableEzpay,
 		"enable_waffo_topup":         enableWaffo,
 		"enable_waffo_pancake_topup": enableWaffoPancake,
 		"waffo_pay_methods": func() interface{} {
@@ -106,6 +152,10 @@ func GetTopUpInfo(c *gin.Context) {
 		"pay_methods":             payMethods,
 		"min_topup":               operation_setting.MinTopUp,
 		"stripe_min_topup":        setting.StripeMinTopUp,
+		"infini_unit_price":       setting.InfiniUnitPrice,
+		"infini_min_topup":        setting.InfiniMinTopUp,
+		"ezpay_unit_price":        setting.EzpayUnitPrice,
+		"ezpay_min_topup":         setting.EzpayMinTopUp,
 		"waffo_min_topup":         setting.WaffoMinTopUp,
 		"waffo_pancake_min_topup": setting.WaffoPancakeMinTopUp,
 		"amount_options":          operation_setting.GetPaymentSetting().AmountOptions,

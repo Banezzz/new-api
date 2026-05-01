@@ -48,6 +48,8 @@ func SetApiRouter(router *gin.Engine) {
 
 		apiRouter.POST("/stripe/webhook", controller.StripeWebhook)
 		apiRouter.POST("/creem/webhook", controller.CreemWebhook)
+		apiRouter.POST("/infini/webhook", controller.InfiniWebhook)
+		apiRouter.POST("/ezpay/webhook", controller.EzpayWebhook)
 		apiRouter.POST("/waffo/webhook", controller.WaffoWebhook)
 		//apiRouter.POST("/waffo-pancake/webhook", controller.WaffoPancakeWebhook)
 
@@ -91,6 +93,10 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/stripe/pay", middleware.CriticalRateLimit(), controller.RequestStripePay)
 				selfRoute.POST("/stripe/amount", controller.RequestStripeAmount)
 				selfRoute.POST("/creem/pay", middleware.CriticalRateLimit(), controller.RequestCreemPay)
+				selfRoute.POST("/infini/amount", controller.RequestInfiniAmount)
+				selfRoute.POST("/infini/pay", middleware.CriticalRateLimit(), controller.RequestInfiniPay)
+				selfRoute.POST("/ezpay/amount", controller.RequestEzpayAmount)
+				selfRoute.POST("/ezpay/pay", middleware.CriticalRateLimit(), controller.RequestEzpayPay)
 				selfRoute.POST("/waffo/amount", controller.RequestWaffoAmount)
 				selfRoute.POST("/waffo/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPay)
 				//selfRoute.POST("/waffo-pancake/amount", controller.RequestWaffoPancakeAmount)
@@ -147,6 +153,8 @@ func SetApiRouter(router *gin.Engine) {
 			subscriptionRoute.POST("/epay/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestEpay)
 			subscriptionRoute.POST("/stripe/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestStripePay)
 			subscriptionRoute.POST("/creem/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestCreemPay)
+			subscriptionRoute.POST("/infini/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestInfiniPay)
+			subscriptionRoute.POST("/ezpay/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestEzpayPay)
 		}
 		subscriptionAdminRoute := apiRouter.Group("/subscription/admin")
 		subscriptionAdminRoute.Use(middleware.AdminAuth())
