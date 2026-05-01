@@ -1,0 +1,773 @@
+openapi: 3.0.0
+components:
+  schemas:
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.currency.v1.GetSupportCurrencyReq:
+      properties: {}
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.currency.v1.GetSupportCurrencyRes:
+      properties:
+        list:
+          description: List of supported cryptocurrencies
+          format: '[]v1.SupportCurrency'
+          items:
+            $ref: >-
+              #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.currency.v1.SupportCurrency
+          type: array
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.currency.v1.SupportCurrency:
+      properties:
+        chain:
+          description: Blockchain network name
+          format: string
+          type: string
+        token_id:
+          description: Token identifier
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.fund.v1.ApplyWithdrawReq:
+      properties:
+        chain:
+          description: Chain
+          format: string
+          type: string
+        token_type:
+          description: Token identifier
+          format: string
+          type: string
+        amount:
+          description: Amount
+          format: string
+          type: string
+        wallet_address:
+          description: Wallet address
+          format: string
+          type: string
+        note:
+          description: Note
+          format: string
+          type: string
+      required:
+        - chain
+        - token_type
+        - amount
+        - wallet_address
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.fund.v1.ApplyWithdrawRes:
+      properties:
+        request_id:
+          description: RequestId
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.QueryOrderReq:
+      properties:
+        order_id:
+          description: Order id
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.QueryOrderRes:
+      properties:
+        merchant_id:
+          format: string
+          type: string
+        request_id:
+          format: string
+          type: string
+        order_id:
+          format: string
+          type: string
+        client_reference:
+          format: string
+          type: string
+        order_desc:
+          format: string
+          type: string
+        order_currency:
+          format: string
+          type: string
+        order_amount:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        amount_confirming:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        amount_confirmed:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        status:
+          format: string
+          type: string
+        created_at:
+          format: int64
+          type: integer
+        updated_at:
+          format: int64
+          type: integer
+        expires_at:
+          format: int64
+          type: integer
+        merchant_info:
+          $ref: >-
+            #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.MerchantInfo
+        exception_tag:
+          format: '[]string'
+          items:
+            format: string
+            type: string
+          type: array
+        success_url:
+          format: string
+          type: string
+        failure_url:
+          format: string
+          type: string
+        available_pay_method:
+          format: '[]int'
+          items:
+            format: int
+            type: integer
+          type: array
+        last_paid_payment:
+          $ref: >-
+            #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.PaymentItem
+      type: object
+    github.com.shopspring.decimal.Decimal:
+      properties: {}
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.MerchantInfo:
+      properties:
+        uid:
+          format: string
+          type: string
+        display_name:
+          format: string
+          type: string
+        logo:
+          format: string
+          type: string
+        default_order_ttl:
+          format: int64
+          type: integer
+        name_type:
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.PaymentItem:
+      properties:
+        payment_id:
+          format: string
+          type: string
+        merchant_id:
+          format: string
+          type: string
+        payment_method:
+          format: int
+          type: integer
+        payment_address:
+          format: string
+          type: string
+        network:
+          format: string
+          type: string
+        due_amount:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        pay_currency:
+          format: string
+          type: string
+        amount_confirmed:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        amount_confirming:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        status:
+          format: string
+          type: string
+        expires_at:
+          format: int64
+          type: integer
+        metadata:
+          format: string
+          type: string
+        created_at:
+          format: int64
+          type: integer
+        updated_at:
+          format: int64
+          type: integer
+        transactions:
+          description: Related transactions
+          format: '[]*v1.PaymentTransaction'
+          items:
+            $ref: >-
+              #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.PaymentTransaction
+          type: array
+        amount_status:
+          format: string
+          type: string
+        exception_tag:
+          format: '[]string'
+          items:
+            format: string
+            type: string
+          type: array
+        crypto_amount:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        channel_fee:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.PaymentTransaction:
+      properties:
+        amount:
+          description: Transaction amount
+          format: string
+          type: string
+        hash:
+          description: Transaction hash
+          format: string
+          type: string
+        status:
+          description: Transaction status
+          format: string
+          type: string
+        transaction_time:
+          description: Transaction time (Unix timestamp in seconds)
+          format: int64
+          type: integer
+        from_address:
+          description: From address
+          format: string
+          type: string
+        transaction_id:
+          description: Transaction ID
+          format: string
+          type: string
+        created_at:
+          description: Created time (Unix timestamp in seconds)
+          format: int64
+          type: integer
+        estimate_confirm_time:
+          format: int64
+          type: integer
+        exception_tag:
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.CreateOrderReq:
+      properties:
+        client_reference:
+          description: Client Reference
+          format: string
+          type: string
+        request_id:
+          description: request id (unique)
+          format: string
+          type: string
+        order_desc:
+          description: Order description
+          format: string
+          type: string
+        amount:
+          description: Order amount
+          format: string
+          type: string
+        merchant_alias:
+          description: customized merchant alias (optional)
+          format: string
+          type: string
+        expires_in:
+          description: >-
+            Time to live in seconds (e.g., 3600 for 1 hour, 0 for default order
+            expires time)
+          format: int64
+          type: integer
+        success_url:
+          description: Success redirect Url
+          format: string
+          type: string
+        failure_url:
+          description: Failure redirect Url
+          format: string
+          type: string
+        pay_methods:
+          description: >-
+            Enabled payment modes for this order (optional, inherits from
+            merchant config if not specified)
+          format: '[]int'
+          items:
+            format: int
+            type: integer
+          type: array
+      required:
+        - request_id
+        - amount
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.CreateOrderRes:
+      properties:
+        client_reference:
+          format: string
+          type: string
+        request_id:
+          format: string
+          type: string
+        order_id:
+          description: Order id
+          format: string
+          type: string
+        checkout_url:
+          description: Checkout url
+          format: string
+          type: string
+        token:
+          description: Token
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.ListOrderReq:
+      properties:
+        currency:
+          description: USDC or USDT
+          format: string
+          type: string
+        status:
+          description: status
+          format: string
+          type: string
+        page:
+          default: 1
+          description: page from 1 to n
+          format: int
+          type: integer
+        page_size:
+          default: 10
+          description: size :default is 10
+          format: int
+          type: integer
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.ListOrderRes:
+      properties:
+        list:
+          format: '[]*v1.OrderItem'
+          items:
+            $ref: >-
+              #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.OrderItem
+          type: array
+        total:
+          format: int
+          type: integer
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.OrderItem:
+      properties:
+        merchant_id:
+          format: string
+          type: string
+        order_id:
+          format: string
+          type: string
+        request_id:
+          format: string
+          type: string
+        client_reference:
+          format: string
+          type: string
+        order_desc:
+          format: string
+          type: string
+        order_currency:
+          format: string
+          type: string
+        order_amount:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        amount_confirming:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        amount_confirmed:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        status:
+          format: string
+          type: string
+        created_at:
+          format: int64
+          type: integer
+        updated_at:
+          format: int64
+          type: integer
+        expires_at:
+          format: int64
+          type: integer
+        exception_tag:
+          format: '[]string'
+          items:
+            format: string
+            type: string
+          type: array
+        success_url:
+          format: string
+          type: string
+        failure_url:
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.ReissueOrderTokenReq:
+      properties:
+        order_id:
+          description: order_id
+          format: string
+          type: string
+      required:
+        - order_id
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.ReissueOrderTokenRes:
+      properties:
+        order_id:
+          description: Order id
+          format: string
+          type: string
+        checkout_url:
+          description: Checkout url
+          format: string
+          type: string
+        token:
+          description: Token
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.QueryPaymentReq:
+      properties:
+        payment_id:
+          description: Payment ID
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.QueryPaymentRes:
+      properties:
+        payment_id:
+          format: string
+          type: string
+        merchant_id:
+          format: string
+          type: string
+        payment_method:
+          format: int
+          type: integer
+        payment_address:
+          format: string
+          type: string
+        network:
+          format: string
+          type: string
+        due_amount:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        pay_currency:
+          format: string
+          type: string
+        amount_confirmed:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        amount_confirming:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        status:
+          format: string
+          type: string
+        expires_at:
+          format: int64
+          type: integer
+        metadata:
+          format: string
+          type: string
+        created_at:
+          format: int64
+          type: integer
+        updated_at:
+          format: int64
+          type: integer
+        transactions:
+          description: Related transactions
+          format: '[]*v1.PaymentTransaction'
+          items:
+            $ref: >-
+              #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.PaymentTransaction
+          type: array
+        amount_status:
+          format: string
+          type: string
+        exception_tag:
+          format: '[]string'
+          items:
+            format: string
+            type: string
+          type: array
+        crypto_amount:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        channel_fee:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+        order_amount:
+          $ref: '#/components/schemas/github.com.shopspring.decimal.Decimal'
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.CreatePaymentReq:
+      properties:
+        order_id:
+          description: Order ID
+          format: string
+          type: string
+        payment_method:
+          default: 1
+          description: Payment method
+          format: int
+          type: integer
+        chain:
+          description: Chain
+          format: string
+          type: string
+        token_id:
+          description: Token identifier
+          format: string
+          type: string
+      required:
+        - order_id
+        - chain
+        - token_id
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.CreatePaymentRes:
+      properties:
+        payment_id:
+          description: Payment ID
+          format: string
+          type: string
+        amount:
+          description: Payment amount
+          format: string
+          type: string
+        amount_confirmed:
+          description: Amount confirmed
+          format: string
+          type: string
+        amount_confirming:
+          description: Amount confirming
+          format: string
+          type: string
+        address:
+          description: Payment address
+          format: string
+          type: string
+        expires_at:
+          description: Expires time (Unix timestamp)
+          format: int64
+          type: integer
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.ListPaymentReq:
+      properties:
+        order_id:
+          description: Order ID
+          format: string
+          type: string
+      type: object
+    github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.ListPaymentRes:
+      properties:
+        list:
+          description: List
+          format: '[]*v1.PaymentItem'
+          items:
+            $ref: >-
+              #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.PaymentItem
+          type: array
+      type: object
+info:
+  title: ''
+  version: ''
+paths:
+  /currency:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.currency.v1.GetSupportCurrencyRes
+          description: ''
+      summary: >-
+        This is a method for get  all cryptocurrencies available for creating
+        orders
+      tags:
+        - Currency
+  /fund/withdraw:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.fund.v1.ApplyWithdrawReq
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.fund.v1.ApplyWithdrawRes
+          description: ''
+      summary: Withdraw fund
+      tags:
+        - Fund
+  /order:
+    get:
+      parameters:
+        - description: Order id
+          in: query
+          name: order_id
+          schema:
+            description: Order id
+            format: string
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.QueryOrderRes
+          description: ''
+      summary: Get a new order
+      tags:
+        - Order
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.CreateOrderReq
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.CreateOrderRes
+          description: ''
+      summary: Create a new order
+      tags:
+        - Order
+  /order/list:
+    get:
+      parameters:
+        - description: USDC or USDT
+          in: query
+          name: currency
+          schema:
+            description: USDC or USDT
+            format: string
+            type: string
+        - description: status
+          in: query
+          name: status
+          schema:
+            description: status
+            format: string
+            type: string
+        - description: page from 1 to n
+          in: query
+          name: page
+          schema:
+            default: 1
+            description: page from 1 to n
+            format: int
+            type: integer
+        - description: size :default is 10
+          in: query
+          name: page_size
+          schema:
+            default: 10
+            description: size :default is 10
+            format: int
+            type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.ListOrderRes
+          description: ''
+      summary: list order
+      tags:
+        - Order
+  /order/token/reissue:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.ReissueOrderTokenReq
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.order.v1.ReissueOrderTokenRes
+          description: ''
+      summary: Reissue order token
+      tags:
+        - Order
+  /payment:
+    get:
+      parameters:
+        - description: Payment ID
+          in: query
+          name: payment_id
+          schema:
+            description: Payment ID
+            format: string
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.QueryPaymentRes
+          description: ''
+      summary: Query payment
+      tags:
+        - Payment
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.CreatePaymentReq
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.CreatePaymentRes
+          description: ''
+      summary: Create a new payment
+      tags:
+        - Payment
+  /payment/list:
+    get:
+      parameters:
+        - description: Order ID
+          in: query
+          name: order_id
+          schema:
+            description: Order ID
+            format: string
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/github.com.infini-money.infini-services-go.app.infini-payment-service.api.payment.v1.ListPaymentRes
+          description: ''
+      summary: Query Order's payments
+      tags:
+        - Payment
