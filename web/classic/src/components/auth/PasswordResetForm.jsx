@@ -27,12 +27,10 @@ import {
   getSystemName,
 } from '../../helpers';
 import Turnstile from 'react-turnstile';
-import { Button, Card, Form, Typography } from '@douyinfe/semi-ui';
+import { Button, Form } from '@douyinfe/semi-ui';
 import { IconMail } from '@douyinfe/semi-icons';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-
-const { Text, Title } = Typography;
 
 const PasswordResetForm = () => {
   const { t } = useTranslation();
@@ -104,86 +102,73 @@ const PasswordResetForm = () => {
   }
 
   return (
-    <div className='relative overflow-hidden bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8'>
-      {/* 背景模糊晕染球 */}
-      <div
-        className='blur-ball blur-ball-indigo'
-        style={{ top: '-80px', right: '-80px', transform: 'none' }}
-      />
-      <div
-        className='blur-ball blur-ball-teal'
-        style={{ top: '50%', left: '-120px' }}
-      />
-      <div className='w-full max-w-sm mt-[60px]'>
-        <div className='flex flex-col items-center'>
-          <div className='w-full max-w-md'>
-            <div className='flex items-center justify-center mb-6 gap-2'>
-              <img src={logo} alt='Logo' className='h-10 rounded-full' />
-              <Title heading={3} className='!text-gray-800'>
-                {systemName}
-              </Title>
-            </div>
+    <div className='min-h-screen flex'>
+      {/* Left: Branding Panel (hidden on mobile) */}
+      <div className='hidden lg:flex lg:w-1/2 home-hero-bg home-grid-overlay items-center justify-center p-12'>
+        <div className='text-center'>
+          <img src={logo} alt='' className='w-16 h-16 rounded-xl mx-auto mb-6' />
+          <h2 className='text-2xl font-bold text-white mb-2'>{systemName}</h2>
+          <p className='text-white/50 text-sm'>{t('统一的 AI 模型聚合与分发网关')}</p>
+        </div>
+      </div>
 
-            <Card className='border-0 !rounded-2xl overflow-hidden'>
-              <div className='flex justify-center pt-6 pb-2'>
-                <Title heading={3} className='text-gray-800 dark:text-gray-200'>
-                  {t('密码重置')}
-                </Title>
-              </div>
-              <div className='px-2 py-8'>
-                <Form className='space-y-3'>
-                  <Form.Input
-                    field='email'
-                    label={t('邮箱')}
-                    placeholder={t('请输入您的邮箱地址')}
-                    name='email'
-                    value={email}
-                    onChange={handleChange}
-                    prefix={<IconMail />}
-                  />
-
-                  <div className='space-y-2 pt-2'>
-                    <Button
-                      theme='solid'
-                      className='w-full !rounded-full'
-                      type='primary'
-                      htmlType='submit'
-                      onClick={handleSubmit}
-                      loading={loading}
-                      disabled={disableButton}
-                    >
-                      {disableButton
-                        ? `${t('重试')} (${countdown})`
-                        : t('提交')}
-                    </Button>
-                  </div>
-                </Form>
-
-                <div className='mt-6 text-center text-sm'>
-                  <Text>
-                    {t('想起来了？')}{' '}
-                    <Link
-                      to='/login'
-                      className='text-blue-600 hover:text-blue-800 font-medium'
-                    >
-                      {t('登录')}
-                    </Link>
-                  </Text>
-                </div>
-              </div>
-            </Card>
-
-            {turnstileEnabled && (
-              <div className='flex justify-center mt-6'>
-                <Turnstile
-                  sitekey={turnstileSiteKey}
-                  onVerify={(token) => {
-                    setTurnstileToken(token);
-                  }}
-                />
-              </div>
-            )}
+      {/* Right: Form Panel */}
+      <div className='w-full lg:w-1/2 flex items-center justify-center bg-semi-color-bg-0 p-6 md:p-12'>
+        <div className='w-full max-w-sm'>
+          {/* Logo (mobile only) */}
+          <div className='lg:hidden flex items-center gap-3 mb-8'>
+            <img src={logo} alt='' className='w-10 h-10 rounded-lg' />
+            <span className='font-semibold text-semi-color-text-0'>{systemName}</span>
           </div>
+
+          <h1 className='text-2xl font-bold text-semi-color-text-0 mb-2'>{t('重置您的密码')}</h1>
+          <p className='text-sm text-semi-color-text-2 mb-8'>{t('输入邮箱以接收重置链接')}</p>
+
+          <Form className='space-y-3'>
+            <Form.Input
+              field='email'
+              label={t('邮箱')}
+              placeholder={t('请输入您的邮箱地址')}
+              name='email'
+              value={email}
+              onChange={handleChange}
+              prefix={<IconMail />}
+            />
+
+            <div className='space-y-2 pt-2'>
+              <Button
+                theme='solid'
+                className='w-full !rounded-lg'
+                type='primary'
+                htmlType='submit'
+                onClick={handleSubmit}
+                loading={loading}
+                disabled={disableButton}
+              >
+                {disableButton
+                  ? `${t('重试')} (${countdown})`
+                  : t('提交')}
+              </Button>
+            </div>
+          </Form>
+
+          <p className='text-center text-sm text-semi-color-text-2 mt-6'>
+            {t('想起来了？')}{' '}
+            <Link to='/login' className='text-semi-color-primary font-medium hover:opacity-80'>
+              {t('登录')}
+            </Link>
+          </p>
+
+          {turnstileEnabled && (
+            <div className='flex justify-center mt-6'>
+              <Turnstile
+                sitekey={turnstileSiteKey}
+                onVerify={(token) => {
+                  setTurnstileToken(token);
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -40,12 +40,12 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
         to: '/',
       },
       {
-        text: t('控制台'),
+        text: t('仪表盘'),
         itemKey: 'console',
         to: '/console',
       },
       {
-        text: t('模型广场'),
+        text: t('接口目录'),
         itemKey: 'pricing',
         to: '/pricing',
       },

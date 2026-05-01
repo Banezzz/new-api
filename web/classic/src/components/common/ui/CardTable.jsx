@@ -21,7 +21,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
-  Card,
   Skeleton,
   Pagination,
   Empty,
@@ -83,7 +82,7 @@ const CardTable = ({
 
     const renderSkeletonCard = (key) => {
       const placeholder = (
-        <div className='p-2'>
+        <div className='p-3'>
           {visibleCols.map((col, idx) => {
             if (!col.title) {
               return (
@@ -96,8 +95,7 @@ const CardTable = ({
             return (
               <div
                 key={idx}
-                className='flex justify-between items-center py-1 border-b last:border-b-0 border-dashed'
-                style={{ borderColor: 'var(--semi-color-border)' }}
+                className='flex justify-between items-center py-1.5'
               >
                 <Skeleton.Title active style={{ width: 80, height: 14 }} />
                 <Skeleton.Title
@@ -115,14 +113,14 @@ const CardTable = ({
       );
 
       return (
-        <Card key={key} className='!rounded-2xl shadow-sm'>
+        <div key={key} className='shadow-sm rounded-lg border p-1' style={{ borderColor: 'var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-0)' }}>
           <Skeleton loading={true} active placeholder={placeholder}></Skeleton>
-        </Card>
+        </div>
       );
     };
 
     return (
-      <div className='flex flex-col gap-2'>
+      <div className='flex flex-col space-y-3'>
         {[1, 2, 3].map((i) => renderSkeletonCard(i))}
       </div>
     );
@@ -139,7 +137,7 @@ const CardTable = ({
       (!tableProps.rowExpandable || tableProps.rowExpandable(record));
 
     return (
-      <Card key={rowKeyVal} className='!rounded-2xl shadow-sm'>
+      <div key={rowKeyVal} className='shadow-sm rounded-lg border p-3' style={{ borderColor: 'var(--semi-color-border)', backgroundColor: 'var(--semi-color-bg-0)' }}>
         {columns.map((col, colIdx) => {
           if (
             tableProps?.visibleColumns &&
@@ -164,10 +162,9 @@ const CardTable = ({
           return (
             <div
               key={col.key || colIdx}
-              className='flex justify-between items-start py-1 border-b last:border-b-0 border-dashed'
-              style={{ borderColor: 'var(--semi-color-border)' }}
+              className='flex justify-between items-start py-1.5'
             >
-              <span className='font-medium text-gray-600 mr-2 whitespace-nowrap select-none'>
+              <span className='font-medium text-semi-color-text-2 mr-2 whitespace-nowrap select-none text-sm'>
                 {title}
               </span>
               <div className='flex-1 break-all flex justify-end items-center gap-1'>
@@ -200,7 +197,7 @@ const CardTable = ({
             </Collapsible>
           </>
         )}
-      </Card>
+      </div>
     );
   };
 
@@ -214,7 +211,7 @@ const CardTable = ({
   }
 
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex flex-col space-y-3'>
       {dataSource.map((record, index) => (
         <MobileRowCard
           key={getRowKey(record, index)}

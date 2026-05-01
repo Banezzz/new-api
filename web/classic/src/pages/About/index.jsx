@@ -62,6 +62,12 @@ const About = () => {
   const customDescription = (
     <div style={{ textAlign: 'center' }}>
       <p>{t('可在设置页面设置关于内容，支持 HTML & Markdown')}</p>
+      <p>
+        {t('一个统一的 AI 模型聚合与分发网关平台')}
+      </p>
+      <p>
+        {t('支持 40+ 主流 AI 供应商，提供统一的 API 接口、用户管理、计费与限流功能。')}
+      </p>
       {t('New API项目仓库地址：')}
       <a
         href='https://github.com/QuantumNous/new-api'

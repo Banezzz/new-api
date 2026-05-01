@@ -68,7 +68,8 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const location = useLocation();
   const [routerMapState, setRouterMapState] = useState(routerMap);
 
-  const workspaceItems = useMemo(() => {
+  // 概览 (Overview)
+  const overviewItems = useMemo(() => {
     const items = [
       {
         text: t('数据看板'),
@@ -79,11 +80,73 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             ? ''
             : 'tableHiddle',
       },
+    ];
+
+    return items.filter((item) => isModuleVisible('overview', item.itemKey));
+  }, [
+    localStorage.getItem('enable_data_export'),
+    t,
+    isModuleVisible,
+  ]);
+
+  // 服务 (Services) - admin only
+  const servicesItems = useMemo(() => {
+    const items = [
+      {
+        text: t('渠道管理'),
+        itemKey: 'channel',
+        to: '/channel',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
+      {
+        text: t('模型管理'),
+        itemKey: 'models',
+        to: '/console/models',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
+      {
+        text: t('模型部署'),
+        itemKey: 'deployment',
+        to: '/deployment',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
+      {
+        text: t('订阅管理'),
+        itemKey: 'subscription',
+        to: '/subscription',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
+    ];
+
+    return items.filter((item) => isModuleVisible('services', item.itemKey));
+  }, [isAdmin(), t, isModuleVisible]);
+
+  // 接口 (API)
+  const apiItems = useMemo(() => {
+    const items = [
+      {
+        text: t('操练场'),
+        itemKey: 'playground',
+        to: '/playground',
+      },
+      {
+        text: t('聊天'),
+        itemKey: 'chat',
+        items: chatItems,
+      },
       {
         text: t('令牌管理'),
         itemKey: 'token',
         to: '/token',
       },
+    ];
+
+    return items.filter((item) => isModuleVisible('api', item.itemKey));
+  }, [chatItems, t, isModuleVisible]);
+
+  // 监控 (Monitoring)
+  const monitoringItems = useMemo(() => {
+    const items = [
       {
         text: t('使用日志'),
         itemKey: 'log',
@@ -107,22 +170,16 @@ const SiderBar = ({ onNavigate = () => {} }) => {
       },
     ];
 
-    // 根据配置过滤项目
-    const filteredItems = items.filter((item) => {
-      const configVisible = isModuleVisible('console', item.itemKey);
-      return configVisible;
-    });
-
-    return filteredItems;
+    return items.filter((item) => isModuleVisible('monitoring', item.itemKey));
   }, [
-    localStorage.getItem('enable_data_export'),
     localStorage.getItem('enable_drawing'),
     localStorage.getItem('enable_task'),
     t,
     isModuleVisible,
   ]);
 
-  const financeItems = useMemo(() => {
+  // 账务 (Billing)
+  const billingItems = useMemo(() => {
     const items = [
       {
         text: t('钱包管理'),
@@ -130,52 +187,23 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         to: '/topup',
       },
       {
-        text: t('个人设置'),
-        itemKey: 'personal',
-        to: '/personal',
-      },
-    ];
-
-    // 根据配置过滤项目
-    const filteredItems = items.filter((item) => {
-      const configVisible = isModuleVisible('personal', item.itemKey);
-      return configVisible;
-    });
-
-    return filteredItems;
-  }, [t, isModuleVisible]);
-
-  const adminItems = useMemo(() => {
-    const items = [
-      {
-        text: t('渠道管理'),
-        itemKey: 'channel',
-        to: '/channel',
-        className: isAdmin() ? '' : 'tableHiddle',
-      },
-      {
-        text: t('订阅管理'),
-        itemKey: 'subscription',
-        to: '/subscription',
-        className: isAdmin() ? '' : 'tableHiddle',
-      },
-      {
-        text: t('模型管理'),
-        itemKey: 'models',
-        to: '/console/models',
-        className: isAdmin() ? '' : 'tableHiddle',
-      },
-      {
-        text: t('模型部署'),
-        itemKey: 'deployment',
-        to: '/deployment',
-        className: isAdmin() ? '' : 'tableHiddle',
-      },
-      {
         text: t('兑换码管理'),
         itemKey: 'redemption',
         to: '/redemption',
         className: isAdmin() ? '' : 'tableHiddle',
+      },
+    ];
+
+    return items.filter((item) => isModuleVisible('billing', item.itemKey));
+  }, [isAdmin(), t, isModuleVisible]);
+
+  // 账户 (Account)
+  const accountItems = useMemo(() => {
+    const items = [
+      {
+        text: t('个人设置'),
+        itemKey: 'personal',
+        to: '/personal',
       },
       {
         text: t('用户管理'),
@@ -191,37 +219,8 @@ const SiderBar = ({ onNavigate = () => {} }) => {
       },
     ];
 
-    // 根据配置过滤项目
-    const filteredItems = items.filter((item) => {
-      const configVisible = isModuleVisible('admin', item.itemKey);
-      return configVisible;
-    });
-
-    return filteredItems;
+    return items.filter((item) => isModuleVisible('account', item.itemKey));
   }, [isAdmin(), isRoot(), t, isModuleVisible]);
-
-  const chatMenuItems = useMemo(() => {
-    const items = [
-      {
-        text: t('操练场'),
-        itemKey: 'playground',
-        to: '/playground',
-      },
-      {
-        text: t('聊天'),
-        itemKey: 'chat',
-        items: chatItems,
-      },
-    ];
-
-    // 根据配置过滤项目
-    const filteredItems = items.filter((item) => {
-      const configVisible = isModuleVisible('chat', item.itemKey);
-      return configVisible;
-    });
-
-    return filteredItems;
-  }, [chatItems, t, isModuleVisible]);
 
   // 更新路由映射，添加聊天路由
   const updateRouterMapWithChats = (chats) => {
@@ -439,51 +438,77 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             setOpenedKeys(data.openKeys);
           }}
         >
-          {/* 聊天区域 */}
-          {hasSectionVisibleModules('chat') && (
+          {/* 概览 */}
+          {hasSectionVisibleModules('overview') && (
             <div className='sidebar-section'>
               {!collapsed && (
-                <div className='sidebar-group-label'>{t('聊天')}</div>
+                <div className='sidebar-group-label'>{t('概览')}</div>
               )}
-              {chatMenuItems.map((item) => renderSubItem(item))}
+              {overviewItems.map((item) => renderNavItem(item))}
             </div>
           )}
 
-          {/* 控制台区域 */}
-          {hasSectionVisibleModules('console') && (
+          {/* 服务 */}
+          {isAdmin() && hasSectionVisibleModules('services') && (
             <>
               <Divider className='sidebar-divider' />
               <div>
                 {!collapsed && (
-                  <div className='sidebar-group-label'>{t('控制台')}</div>
+                  <div className='sidebar-group-label'>{t('服务')}</div>
                 )}
-                {workspaceItems.map((item) => renderNavItem(item))}
+                {servicesItems.map((item) => renderNavItem(item))}
               </div>
             </>
           )}
 
-          {/* 个人中心区域 */}
-          {hasSectionVisibleModules('personal') && (
+          {/* 接口 */}
+          {hasSectionVisibleModules('api') && (
             <>
               <Divider className='sidebar-divider' />
               <div>
                 {!collapsed && (
-                  <div className='sidebar-group-label'>{t('个人中心')}</div>
+                  <div className='sidebar-group-label'>{t('接口')}</div>
                 )}
-                {financeItems.map((item) => renderNavItem(item))}
+                {apiItems.map((item) => renderSubItem(item))}
               </div>
             </>
           )}
 
-          {/* 管理员区域 - 只在管理员时显示且配置允许时显示 */}
-          {isAdmin() && hasSectionVisibleModules('admin') && (
+          {/* 监控 */}
+          {hasSectionVisibleModules('monitoring') && (
             <>
               <Divider className='sidebar-divider' />
               <div>
                 {!collapsed && (
-                  <div className='sidebar-group-label'>{t('管理员')}</div>
+                  <div className='sidebar-group-label'>{t('监控')}</div>
                 )}
-                {adminItems.map((item) => renderNavItem(item))}
+                {monitoringItems.map((item) => renderNavItem(item))}
+              </div>
+            </>
+          )}
+
+          {/* 账务 */}
+          {hasSectionVisibleModules('billing') && (
+            <>
+              <Divider className='sidebar-divider' />
+              <div>
+                {!collapsed && (
+                  <div className='sidebar-group-label'>{t('账务')}</div>
+                )}
+                {billingItems.map((item) => renderNavItem(item))}
+              </div>
+            </>
+          )}
+
+          {/* 账户 */}
+          {hasSectionVisibleModules('account') && (
+            <>
+              <Divider className='sidebar-divider' />
+              <div>
+                {!collapsed && (
+                  <div className='sidebar-group-label'>{t('账户')}</div>
+                )}
+                {accountItems.map((item) => renderNavItem(item))}
               </div>
             </>
           )}
