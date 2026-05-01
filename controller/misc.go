@@ -61,6 +61,7 @@ func GetStatus(c *gin.Context) {
 		"linuxdo_minimum_trust_level": common.LinuxDOMinimumTrustLevel,
 		"telegram_oauth":              common.TelegramOAuthEnabled,
 		"telegram_bot_name":           common.TelegramBotName,
+		"theme":                       system_setting.GetThemeSettings().Frontend,
 		"system_name":                 common.SystemName,
 		"logo":                        common.Logo,
 		"footer_html":                 common.Footer,
@@ -89,16 +90,9 @@ func GetStatus(c *gin.Context) {
 		"self_use_mode_enabled":         operation_setting.SelfUseModeEnabled,
 		"default_use_auto_group":        setting.DefaultUseAutoGroup,
 
-		"usd_exchange_rate":   operation_setting.USDExchangeRate,
-		"price":               operation_setting.Price,
-		"stripe_unit_price":   setting.StripeUnitPrice,
-		"infini_unit_price":   setting.InfiniUnitPrice,
-		"ezpay_unit_price":    setting.EzpayUnitPrice,
-		"enable_online_topup": isEpayTopUpEnabled(),
-		"enable_stripe_topup": isStripeTopUpEnabled(),
-		"enable_creem_topup":  isCreemTopUpEnabled(),
-		"enable_infini_topup": isInfiniTopUpEnabled(),
-		"enable_ezpay_topup":  isEzpayTopUpEnabled(),
+		"usd_exchange_rate": operation_setting.USDExchangeRate,
+		"price":             operation_setting.Price,
+		"stripe_unit_price": setting.StripeUnitPrice,
 
 		// 面板启用开关
 		"api_info_enabled":      cs.ApiInfoEnabled,

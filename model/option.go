@@ -90,28 +90,6 @@ func InitOptionMap() {
 	common.OptionMap["CreemProducts"] = setting.CreemProducts
 	common.OptionMap["CreemTestMode"] = strconv.FormatBool(setting.CreemTestMode)
 	common.OptionMap["CreemWebhookSecret"] = setting.CreemWebhookSecret
-	common.OptionMap["InfiniEnabled"] = strconv.FormatBool(setting.InfiniEnabled)
-	common.OptionMap["InfiniSandbox"] = strconv.FormatBool(setting.InfiniSandbox)
-	common.OptionMap["InfiniBaseURL"] = setting.InfiniBaseURL
-	common.OptionMap["InfiniKeyId"] = setting.InfiniKeyId
-	common.OptionMap["InfiniSecretKey"] = setting.InfiniSecretKey
-	common.OptionMap["InfiniWebhookSecret"] = setting.InfiniWebhookSecret
-	common.OptionMap["InfiniMerchantAlias"] = setting.InfiniMerchantAlias
-	common.OptionMap["InfiniSuccessURL"] = setting.InfiniSuccessURL
-	common.OptionMap["InfiniFailureURL"] = setting.InfiniFailureURL
-	common.OptionMap["InfiniUnitPrice"] = strconv.FormatFloat(setting.InfiniUnitPrice, 'f', -1, 64)
-	common.OptionMap["InfiniMinTopUp"] = strconv.Itoa(setting.InfiniMinTopUp)
-	common.OptionMap["InfiniOrderTTLSeconds"] = strconv.Itoa(setting.InfiniOrderTTLSeconds)
-	common.OptionMap["InfiniPayMethods"] = setting.InfiniPayMethods2JsonString()
-	common.OptionMap["EzpayEnabled"] = strconv.FormatBool(setting.EzpayEnabled)
-	common.OptionMap["EzpayBaseURL"] = setting.EzpayBaseURL
-	common.OptionMap["EzpayPublicURL"] = setting.EzpayPublicURL
-	common.OptionMap["EzpayPID"] = setting.EzpayPID
-	common.OptionMap["EzpaySecretKey"] = setting.EzpaySecretKey
-	common.OptionMap["EzpayNotifyURL"] = setting.EzpayNotifyURL
-	common.OptionMap["EzpayReturnURL"] = setting.EzpayReturnURL
-	common.OptionMap["EzpayUnitPrice"] = strconv.FormatFloat(setting.EzpayUnitPrice, 'f', -1, 64)
-	common.OptionMap["EzpayMinTopUp"] = strconv.Itoa(setting.EzpayMinTopUp)
 	common.OptionMap["WaffoEnabled"] = strconv.FormatBool(setting.WaffoEnabled)
 	common.OptionMap["WaffoApiKey"] = setting.WaffoApiKey
 	common.OptionMap["WaffoPrivateKey"] = setting.WaffoPrivateKey
@@ -411,48 +389,6 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.CreemTestMode = value == "true"
 	case "CreemWebhookSecret":
 		setting.CreemWebhookSecret = value
-	case "InfiniEnabled":
-		setting.InfiniEnabled = value == "true"
-	case "InfiniSandbox":
-		setting.InfiniSandbox = value == "true"
-	case "InfiniBaseURL":
-		setting.InfiniBaseURL = value
-	case "InfiniKeyId":
-		setting.InfiniKeyId = value
-	case "InfiniSecretKey":
-		setting.InfiniSecretKey = value
-	case "InfiniWebhookSecret":
-		setting.InfiniWebhookSecret = value
-	case "InfiniMerchantAlias":
-		setting.InfiniMerchantAlias = value
-	case "InfiniSuccessURL":
-		setting.InfiniSuccessURL = value
-	case "InfiniFailureURL":
-		setting.InfiniFailureURL = value
-	case "InfiniUnitPrice":
-		setting.InfiniUnitPrice, _ = strconv.ParseFloat(value, 64)
-	case "InfiniMinTopUp":
-		setting.InfiniMinTopUp, _ = strconv.Atoi(value)
-	case "InfiniOrderTTLSeconds":
-		setting.InfiniOrderTTLSeconds, _ = strconv.Atoi(value)
-	case "EzpayEnabled":
-		setting.EzpayEnabled = value == "true"
-	case "EzpayBaseURL":
-		setting.EzpayBaseURL = value
-	case "EzpayPublicURL":
-		setting.EzpayPublicURL = value
-	case "EzpayPID":
-		setting.EzpayPID = value
-	case "EzpaySecretKey":
-		setting.EzpaySecretKey = value
-	case "EzpayNotifyURL":
-		setting.EzpayNotifyURL = value
-	case "EzpayReturnURL":
-		setting.EzpayReturnURL = value
-	case "EzpayUnitPrice":
-		setting.EzpayUnitPrice, _ = strconv.ParseFloat(value, 64)
-	case "EzpayMinTopUp":
-		setting.EzpayMinTopUp, _ = strconv.Atoi(value)
 	case "WaffoEnabled":
 		setting.WaffoEnabled = value == "true"
 	case "WaffoApiKey":
@@ -611,8 +547,6 @@ func updateOptionMap(key string, value string) (err error) {
 		// WaffoPayMethods is read directly from OptionMap via setting.GetWaffoPayMethods().
 		// The value is already stored in OptionMap at the top of this function (line: common.OptionMap[key] = value).
 		// No additional in-memory variable to update.
-	case "InfiniPayMethods":
-		// InfiniPayMethods is read directly from OptionMap via setting.GetInfiniPayMethods().
 	}
 	return err
 }
@@ -641,8 +575,14 @@ func handleConfigUpdate(key, value string) bool {
 
 	// 特定配置的后处理
 	if configName == "performance_setting" {
-		// 同步磁盘缓存配置到 common 包
 		performance_setting.UpdateAndSync()
+	} else if configName == "tool_price_setting" {
+		operation_setting.RebuildToolPriceIndex()
+	} else if configName == "billing_setting" {
+		InvalidatePricingCache()
+		ratio_setting.InvalidateExposedDataCache()
+	} else if configName == "theme" {
+		system_setting.UpdateAndSyncTheme()
 	}
 
 	return true // 已处理

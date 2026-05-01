@@ -90,56 +90,10 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 	}
 
-	enableInfini := isInfiniTopUpEnabled()
-	if enableInfini {
-		hasInfini := make(map[string]struct{}, len(payMethods))
-		for _, method := range payMethods {
-			if methodType := method["type"]; methodType != "" {
-				hasInfini[methodType] = struct{}{}
-			}
-		}
-		for _, method := range setting.GetInfiniPayMethods() {
-			if method.Type == "" || method.Name == "" {
-				continue
-			}
-			if _, ok := hasInfini[method.Type]; ok {
-				continue
-			}
-			payMethods = append(payMethods, map[string]string{
-				"name":      method.Name,
-				"type":      method.Type,
-				"color":     method.Color,
-				"min_topup": strconv.Itoa(setting.InfiniMinTopUp),
-			})
-		}
-	}
-
-	enableEzpay := isEzpayTopUpEnabled()
-	if enableEzpay {
-		hasEzpay := false
-		for _, method := range payMethods {
-			if method["type"] == model.PaymentMethodEzpay {
-				hasEzpay = true
-				break
-			}
-		}
-
-		if !hasEzpay {
-			payMethods = append(payMethods, map[string]string{
-				"name":      "EZPay",
-				"type":      model.PaymentMethodEzpay,
-				"color":     "rgba(var(--semi-green-5), 1)",
-				"min_topup": strconv.Itoa(setting.EzpayMinTopUp),
-			})
-		}
-	}
-
 	data := gin.H{
 		"enable_online_topup":        isEpayTopUpEnabled(),
 		"enable_stripe_topup":        isStripeTopUpEnabled(),
 		"enable_creem_topup":         isCreemTopUpEnabled(),
-		"enable_infini_topup":        enableInfini,
-		"enable_ezpay_topup":         enableEzpay,
 		"enable_waffo_topup":         enableWaffo,
 		"enable_waffo_pancake_topup": enableWaffoPancake,
 		"waffo_pay_methods": func() interface{} {
@@ -152,10 +106,6 @@ func GetTopUpInfo(c *gin.Context) {
 		"pay_methods":             payMethods,
 		"min_topup":               operation_setting.MinTopUp,
 		"stripe_min_topup":        setting.StripeMinTopUp,
-		"infini_unit_price":       setting.InfiniUnitPrice,
-		"infini_min_topup":        setting.InfiniMinTopUp,
-		"ezpay_unit_price":        setting.EzpayUnitPrice,
-		"ezpay_min_topup":         setting.EzpayMinTopUp,
 		"waffo_min_topup":         setting.WaffoMinTopUp,
 		"waffo_pancake_min_topup": setting.WaffoPancakeMinTopUp,
 		"amount_options":          operation_setting.GetPaymentSetting().AmountOptions,
@@ -171,19 +121,6 @@ type EpayRequest struct {
 
 type AmountRequest struct {
 	Amount int64 `json:"amount"`
-}
-
-var nonEpayPaymentMethodsForCallback = []string{
-	model.PaymentMethodStripe,
-	model.PaymentMethodCreem,
-	model.PaymentMethodInfini,
-	model.PaymentMethodEzpay,
-	model.PaymentMethodWaffo,
-	model.PaymentMethodWaffoPancake,
-}
-
-func isNonEpayPaymentMethodForEpayCallback(paymentMethod string) bool {
-	return lo.Contains(nonEpayPaymentMethodsForCallback, paymentMethod)
 }
 
 func GetEpayClient() *epay.Client {
@@ -300,13 +237,14 @@ func RequestEpay(c *gin.Context) {
 		amount = dAmount.Div(dQuotaPerUnit).IntPart()
 	}
 	topUp := &model.TopUp{
-		UserId:        id,
-		Amount:        amount,
-		Money:         payMoney,
-		TradeNo:       tradeNo,
-		PaymentMethod: req.PaymentMethod,
-		CreateTime:    time.Now().Unix(),
-		Status:        common.TopUpStatusPending,
+		UserId:          id,
+		Amount:          amount,
+		Money:           payMoney,
+		TradeNo:         tradeNo,
+		PaymentMethod:   req.PaymentMethod,
+		PaymentProvider: model.PaymentProviderEpay,
+		CreateTime:      time.Now().Unix(),
+		Status:          common.TopUpStatusPending,
 	}
 	err = topUp.Insert()
 	if err != nil {
@@ -431,15 +369,15 @@ func EpayNotify(c *gin.Context) {
 			logger.LogWarn(c.Request.Context(), fmt.Sprintf("易支付 回调订单不存在 trade_no=%s callback_type=%s client_ip=%s verify_info=%q", verifyInfo.ServiceTradeNo, verifyInfo.Type, c.ClientIP(), common.GetJsonString(verifyInfo)))
 			return
 		}
-		if isNonEpayPaymentMethodForEpayCallback(topUp.PaymentMethod) {
-			logger.LogWarn(c.Request.Context(), fmt.Sprintf("易支付 订单支付方式不匹配 trade_no=%s order_payment_method=%s callback_type=%s client_ip=%s", verifyInfo.ServiceTradeNo, topUp.PaymentMethod, verifyInfo.Type, c.ClientIP()))
-			return
-		}
-		if topUp.PaymentMethod != verifyInfo.Type {
-			logger.LogWarn(c.Request.Context(), fmt.Sprintf("易支付 订单支付方式不匹配 trade_no=%s order_payment_method=%s callback_type=%s client_ip=%s", verifyInfo.ServiceTradeNo, topUp.PaymentMethod, verifyInfo.Type, c.ClientIP()))
+		if topUp.PaymentProvider != model.PaymentProviderEpay {
+			logger.LogWarn(c.Request.Context(), fmt.Sprintf("易支付 订单支付网关不匹配 trade_no=%s order_provider=%s callback_type=%s client_ip=%s", verifyInfo.ServiceTradeNo, topUp.PaymentProvider, verifyInfo.Type, c.ClientIP()))
 			return
 		}
 		if topUp.Status == common.TopUpStatusPending {
+			if topUp.PaymentMethod != verifyInfo.Type {
+				logger.LogInfo(c.Request.Context(), fmt.Sprintf("易支付 实际支付方式与订单不同 trade_no=%s order_payment_method=%s actual_type=%s client_ip=%s", verifyInfo.ServiceTradeNo, topUp.PaymentMethod, verifyInfo.Type, c.ClientIP()))
+				topUp.PaymentMethod = verifyInfo.Type
+			}
 			topUp.Status = common.TopUpStatusSuccess
 			err := topUp.Update()
 			if err != nil {

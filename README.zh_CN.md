@@ -1,6 +1,6 @@
 <div align="center">
 
-![new-api](/web/public/logo.png)
+![new-api](/web/default/public/logo.png)
 
 # New API
 
@@ -168,7 +168,6 @@ docker run --name new-api -d --restart always \
 | 分类 | 链接 |
 |------|------|
 | 🚀 部署指南 | [安装文档](https://docs.newapi.pro/zh/docs/installation) |
-| 🔄 热重载最佳实践 | [流式请求友好的滚动重建](./docs/installation/Hot-Reload-Best-Practice.md) |
 | ⚙️ 环境配置 | [环境变量](https://docs.newapi.pro/zh/docs/installation/config-maintenance/environment-variables) |
 | 📡 接口文档 | [API 文档](https://docs.newapi.pro/zh/docs/api) |
 | ❓ 常见问题 | [FAQ](https://docs.newapi.pro/zh/docs/support/faq) |
@@ -376,8 +375,6 @@ docker run --name new-api -d --restart always \
 > - 也可使用绝对路径，如：`/your/custom/path:/data`
 
 </details>
-
-> **🔄 热重载最佳实践：** 如果你把 `new-api` 当作 API 中转网关使用，并且希望尽量不影响流式请求，建议参考 [热重载与滚动重建最佳实践](./docs/installation/Hot-Reload-Best-Practice.md)
 
 <details>
 <summary><strong>方式 3：宝塔面板</strong></summary>
