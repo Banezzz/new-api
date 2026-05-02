@@ -153,6 +153,7 @@ export type IntegrationSettings = {
   'monitor_setting.auto_test_channel_minutes': number
   'model_deployment.ionet.api_key': string
   'model_deployment.ionet.enabled': boolean
+  ServerAddress: string
   PayAddress: string
   EpayId: string
   EpayKey: string
@@ -172,6 +173,28 @@ export type IntegrationSettings = {
   CreemWebhookSecret: string
   CreemTestMode: boolean
   CreemProducts: string
+  InfiniEnabled: boolean
+  InfiniSandbox: boolean
+  InfiniBaseURL: string
+  InfiniKeyId: string
+  InfiniSecretKey: string
+  InfiniWebhookSecret: string
+  InfiniMerchantAlias: string
+  InfiniSuccessURL: string
+  InfiniFailureURL: string
+  InfiniUnitPrice: number
+  InfiniMinTopUp: number
+  InfiniOrderTTLSeconds: number
+  InfiniPayMethods: string
+  EzpayEnabled: boolean
+  EzpayBaseURL: string
+  EzpayPublicURL: string
+  EzpayPID: string
+  EzpaySecretKey: string
+  EzpayNotifyURL: string
+  EzpayReturnURL: string
+  EzpayUnitPrice: number
+  EzpayMinTopUp: number
   WaffoEnabled: boolean
   WaffoApiKey: string
   WaffoPrivateKey: string

@@ -34,6 +34,36 @@ const INTEGRATIONS_SECTIONS = [
           CreemTestMode: settings.CreemTestMode,
           CreemProducts: settings.CreemProducts,
         }}
+        infiniDefaultValues={{
+          ServerAddress: settings.ServerAddress ?? '',
+          CustomCallbackAddress: settings.CustomCallbackAddress ?? '',
+          InfiniEnabled: settings.InfiniEnabled ?? false,
+          InfiniSandbox: settings.InfiniSandbox ?? false,
+          InfiniBaseURL: settings.InfiniBaseURL ?? '',
+          InfiniKeyId: settings.InfiniKeyId ?? '',
+          InfiniSecretKey: '',
+          InfiniWebhookSecret: '',
+          InfiniMerchantAlias: settings.InfiniMerchantAlias ?? '',
+          InfiniSuccessURL: settings.InfiniSuccessURL ?? '',
+          InfiniFailureURL: settings.InfiniFailureURL ?? '',
+          InfiniUnitPrice: settings.InfiniUnitPrice ?? 1,
+          InfiniMinTopUp: settings.InfiniMinTopUp ?? 1,
+          InfiniOrderTTLSeconds: settings.InfiniOrderTTLSeconds ?? 0,
+          InfiniPayMethods: settings.InfiniPayMethods ?? '[]',
+        }}
+        ezpayDefaultValues={{
+          ServerAddress: settings.ServerAddress ?? '',
+          CustomCallbackAddress: settings.CustomCallbackAddress ?? '',
+          EzpayEnabled: settings.EzpayEnabled ?? false,
+          EzpayBaseURL: settings.EzpayBaseURL ?? '',
+          EzpayPublicURL: settings.EzpayPublicURL ?? '',
+          EzpayPID: settings.EzpayPID ?? '',
+          EzpaySecretKey: '',
+          EzpayNotifyURL: settings.EzpayNotifyURL ?? '',
+          EzpayReturnURL: settings.EzpayReturnURL ?? '',
+          EzpayUnitPrice: settings.EzpayUnitPrice ?? 1,
+          EzpayMinTopUp: settings.EzpayMinTopUp ?? 1,
+        }}
         waffoDefaultValues={{
           WaffoEnabled: settings.WaffoEnabled ?? false,
           WaffoApiKey: settings.WaffoApiKey ?? '',
