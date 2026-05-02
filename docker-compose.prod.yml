@@ -1,0 +1,70 @@
+# Production compose for the current Cloudflare Tunnel deployment.
+#
+# Keep Cloudflare Tunnel pointing at 127.0.0.1:18900.
+# Use this file for production rebuilds instead of the upstream sample
+# docker-compose.yml, which exposes 3000:3000 and uses sample credentials.
+#
+# Usage:
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml build new-api
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps new-api
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+#   curl http://127.0.0.1:18900/api/status
+
+services:
+  new-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: new-api-new-api
+    container_name: new-api
+    restart: always
+    command: --log-dir /app/logs
+    ports:
+      - "${NEW_API_BIND:-127.0.0.1}:${NEW_API_PORT:-18900}:3000"
+    volumes:
+      - ./data:/data
+      - ./logs:/app/logs
+    environment:
+      SQL_DSN: ${SQL_DSN:?set SQL_DSN in .env.prod}
+      REDIS_CONN_STRING: ${REDIS_CONN_STRING:-redis://redis}
+      TZ: ${TZ:-Asia/Shanghai}
+      ERROR_LOG_ENABLED: ${ERROR_LOG_ENABLED:-true}
+      BATCH_UPDATE_ENABLED: ${BATCH_UPDATE_ENABLED:-true}
+      STREAMING_TIMEOUT: ${STREAMING_TIMEOUT:-300}
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - new-api-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    networks:
+      - new-api-network
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: ${POSTGRES_DB:-new-api}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - new-api-network
+
+volumes:
+  pg_data:
+
+networks:
+  new-api-network:
+    driver: bridge

@@ -18,9 +18,9 @@
 如果你当前还是单实例部署，最佳实践是：
 
 ```bash
-docker compose build new-api
-docker compose up -d --no-deps new-api
-docker compose ps
+docker compose --env-file .env.prod -f docker-compose.prod.yml build new-api
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps new-api
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
 curl http://127.0.0.1:18900/api/status
 ```
 
@@ -30,6 +30,7 @@ curl http://127.0.0.1:18900/api/status
 - 不重建 `postgres` / `mysql` / `redis`
 - 不改端口映射
 - 不改 Cloudflare Tunnel
+- 固定使用 `127.0.0.1:18900`，避免误用上游示例配置暴露 `3000:3000`
 - 前端和后端会一起更新，因为当前 `Dockerfile` 会把前端静态资源打进同一个镜像
 
 这个方案的边界：
@@ -150,10 +151,12 @@ docker compose down && docker compose up -d
 
 ### 4.2 标准命令
 
+生产环境使用 [docker-compose.prod.yml](/home/dev/new-api/docker-compose.prod.yml)，并从 [.env.prod.example](/home/dev/new-api/.env.prod.example) 准备本机 `.env.prod`。`.env.prod` 存放实际数据库密码、端口等部署值，已加入 `.gitignore`，不要提交。
+
 ```bash
-docker compose build new-api
-docker compose up -d --no-deps new-api
-docker compose ps
+docker compose --env-file .env.prod -f docker-compose.prod.yml build new-api
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps new-api
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
 curl http://127.0.0.1:18900/api/status
 ```
 
@@ -300,10 +303,11 @@ docker compose build new-api
 
 ### 7.1 单实例最少应该做到
 
-- 使用 `docker compose build new-api`
-- 使用 `docker compose up -d --no-deps new-api`
+- 使用 `docker compose --env-file .env.prod -f docker-compose.prod.yml build new-api`
+- 使用 `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps new-api`
 - 不要 `docker compose down`
 - 不要一起重建数据库和 Redis
+- 不要直接用上游示例 `docker-compose.yml` 发布生产容器，避免改变 `127.0.0.1:18900` 入口
 
 ### 7.2 双实例至少应该做到
 
@@ -344,9 +348,9 @@ docker compose build new-api
 当前项目的默认最佳实践是：
 
 ```bash
-docker compose build new-api
-docker compose up -d --no-deps new-api
-docker compose ps
+docker compose --env-file .env.prod -f docker-compose.prod.yml build new-api
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps new-api
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
 curl http://127.0.0.1:18900/api/status
 ```
 
