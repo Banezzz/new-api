@@ -24,6 +24,18 @@ export type StripePaymentResponse = ApiResponse<{ pay_link: string }>
 export type AffiliateCodeResponse = ApiResponse<string>
 export type AffiliateTransferResponse = ApiResponse
 export type CreemPaymentResponse = ApiResponse<{ checkout_url: string }>
+export type HostedPaymentResponse = ApiResponse<
+  | {
+      checkout_url?: string
+      payment_url?: string
+      order_id?: string
+      trade_no?: string
+      actual_amount?: number | string
+    }
+  | string
+>
+export type InfiniPaymentResponse = HostedPaymentResponse
+export type EzpayPaymentResponse = HostedPaymentResponse
 export type WaffoPaymentResponse = ApiResponse<
   { payment_url?: string } | string
 >
@@ -117,6 +129,18 @@ export interface TopupInfo {
   enable_creem_topup?: boolean
   /** Available Creem products */
   creem_products?: CreemProduct[]
+  /** Whether Infini topup is enabled */
+  enable_infini_topup?: boolean
+  /** Unit price for Infini topup */
+  infini_unit_price?: number
+  /** Minimum topup amount for Infini */
+  infini_min_topup?: number
+  /** Whether EZPay topup is enabled */
+  enable_ezpay_topup?: boolean
+  /** Unit price for EZPay topup */
+  ezpay_unit_price?: number
+  /** Minimum topup amount for EZPay */
+  ezpay_min_topup?: number
   /** Whether Waffo topup is enabled */
   enable_waffo_topup?: boolean
   /** Available Waffo payment methods */

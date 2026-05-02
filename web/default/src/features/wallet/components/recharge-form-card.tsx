@@ -59,6 +59,8 @@ interface RechargeFormCardProps {
   creemProducts?: CreemProduct[]
   enableCreemTopup?: boolean
   onCreemProductSelect?: (product: CreemProduct) => void
+  enableInfiniTopup?: boolean
+  enableEzpayTopup?: boolean
   enableWaffoTopup?: boolean
   waffoPayMethods?: WaffoPayMethod[]
   waffoMinTopup?: number
@@ -89,6 +91,8 @@ export function RechargeFormCard({
   creemProducts,
   enableCreemTopup,
   onCreemProductSelect,
+  enableInfiniTopup,
+  enableEzpayTopup,
   enableWaffoTopup,
   waffoPayMethods,
   waffoMinTopup,
@@ -113,6 +117,8 @@ export function RechargeFormCard({
   const hasConfigurableTopup =
     topupInfo?.enable_online_topup ||
     topupInfo?.enable_stripe_topup ||
+    enableInfiniTopup ||
+    enableEzpayTopup ||
     enableWaffoTopup ||
     enableWaffoPancakeTopup
   const hasAnyTopup = hasConfigurableTopup || enableCreemTopup

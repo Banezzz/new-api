@@ -66,6 +66,15 @@ export function getPaymentIcon(
     return <CreditCard className={className} />
   }
 
+  if (paymentType.startsWith(PAYMENT_TYPES.INFINI)) {
+    return (
+      <CreditCard
+        className={className}
+        style={{ color: PAYMENT_ICON_COLORS[PAYMENT_TYPES.INFINI] }}
+      />
+    )
+  }
+
   switch (paymentType) {
     case PAYMENT_TYPES.ALIPAY:
       return (
@@ -93,6 +102,13 @@ export function getPaymentIcon(
         <Landmark
           className={className}
           style={{ color: PAYMENT_ICON_COLORS[PAYMENT_TYPES.CREEM] }}
+        />
+      )
+    case PAYMENT_TYPES.EZPAY:
+      return (
+        <Landmark
+          className={className}
+          style={{ color: PAYMENT_ICON_COLORS[PAYMENT_TYPES.EZPAY] }}
         />
       )
     case PAYMENT_TYPES.WAFFO:

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Crown, CalendarClock, Package } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -17,12 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { GroupBadge } from '@/components/group-badge'
 import { Separator } from '@/components/ui/separator'
+import { GroupBadge } from '@/components/group-badge'
 import {
   paySubscriptionStripe,
   paySubscriptionCreem,
   paySubscriptionEpay,
+  paySubscriptionInfini,
+  paySubscriptionEzpay,
 } from '../../api'
 import { formatDuration, formatResetPeriod } from '../../lib'
 import type { PlanRecord } from '../../types'
@@ -39,32 +41,93 @@ interface Props {
   enableStripe?: boolean
   enableCreem?: boolean
   enableOnlineTopUp?: boolean
+  enableInfiniTopUp?: boolean
+  enableEzpayTopUp?: boolean
   epayMethods?: PaymentMethod[]
+  infiniMethods?: PaymentMethod[]
+  ezpayMethods?: PaymentMethod[]
   purchaseLimit?: number
   purchaseCount?: number
+}
+
+function isSafeHttpUrl(value: string): boolean {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return false
+  }
+
+  try {
+    const url = new URL(trimmed)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function getHostedPaymentUrl(data: unknown): string | null {
+  if (!data || typeof data !== 'object') {
+    return null
+  }
+
+  const payload = data as {
+    checkout_url?: unknown
+    payment_url?: unknown
+  }
+
+  if (typeof payload.checkout_url === 'string') {
+    return payload.checkout_url
+  }
+
+  if (typeof payload.payment_url === 'string') {
+    return payload.payment_url
+  }
+
+  return null
+}
+
+function resolveSelectedPaymentMethod(
+  selected: string,
+  methods: PaymentMethod[] | undefined
+): string {
+  if (selected && methods?.some((method) => method.type === selected)) {
+    return selected
+  }
+
+  return methods?.[0]?.type || ''
 }
 
 export function SubscriptionPurchaseDialog(props: Props) {
   const { t } = useTranslation()
   const [paying, setPaying] = useState(false)
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('')
-
-  useEffect(() => {
-    if (props.open && props.epayMethods && props.epayMethods.length > 0) {
-      setSelectedEpayMethod(props.epayMethods[0].type)
-    } else if (!props.open) {
-      setSelectedEpayMethod('')
-    }
-  }, [props.open, props.epayMethods])
+  const [selectedInfiniMethod, setSelectedInfiniMethod] = useState('')
+  const [selectedEzpayMethod, setSelectedEzpayMethod] = useState('')
 
   const plan = props.plan?.plan
   if (!plan) return null
 
+  const effectiveEpayMethod = resolveSelectedPaymentMethod(
+    selectedEpayMethod,
+    props.epayMethods
+  )
+  const effectiveInfiniMethod = resolveSelectedPaymentMethod(
+    selectedInfiniMethod,
+    props.infiniMethods
+  )
+  const effectiveEzpayMethod = resolveSelectedPaymentMethod(
+    selectedEzpayMethod,
+    props.ezpayMethods
+  )
   const hasStripe = props.enableStripe && !!plan.stripe_price_id
   const hasCreem = props.enableCreem && !!plan.creem_product_id
   const hasEpay =
     props.enableOnlineTopUp && (props.epayMethods || []).length > 0
-  const hasAnyPayment = hasStripe || hasCreem || hasEpay
+  const hasInfini =
+    props.enableInfiniTopUp && (props.infiniMethods || []).length > 0
+  const hasEzpay =
+    props.enableEzpayTopUp && (props.ezpayMethods || []).length > 0
+  const hasAnyPayment =
+    hasStripe || hasCreem || hasEpay || hasInfini || hasEzpay
   const totalAmount = Number(plan.total_amount || 0)
   const price = Number(plan.price_amount || 0).toFixed(2)
   const limitReached =
@@ -120,7 +183,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 
   const handlePayEpay = async () => {
-    if (!selectedEpayMethod) {
+    if (!effectiveEpayMethod) {
       toast.error(t('Please select a payment method'))
       return
     }
@@ -128,7 +191,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     try {
       const res = await paySubscriptionEpay({
         plan_id: plan.id,
-        payment_method: selectedEpayMethod,
+        payment_method: effectiveEpayMethod,
       })
       if (res.message === 'success' && res.url) {
         const form = document.createElement('form')
@@ -148,6 +211,87 @@ export function SubscriptionPurchaseDialog(props: Props) {
         form.submit()
         document.body.removeChild(form)
         toast.success(t('Payment initiated'))
+        props.onOpenChange(false)
+      } else {
+        toast.error(
+          res.message && res.message !== 'success'
+            ? res.message
+            : t('Payment request failed')
+        )
+      }
+    } catch {
+      toast.error(t('Payment request failed'))
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  const handlePayInfini = async () => {
+    if (!effectiveInfiniMethod) {
+      toast.error(t('Please select a payment method'))
+      return
+    }
+
+    setPaying(true)
+    try {
+      const res = await paySubscriptionInfini({
+        plan_id: plan.id,
+        payment_method: effectiveInfiniMethod,
+      })
+
+      if (res.message === 'success') {
+        const checkoutUrl = getHostedPaymentUrl(res.data)
+        if (!checkoutUrl) {
+          toast.error(t('Payment request failed'))
+          return
+        }
+
+        if (!isSafeHttpUrl(checkoutUrl)) {
+          toast.error(t('Invalid payment redirect URL'))
+          return
+        }
+
+        window.open(checkoutUrl, '_blank', 'noopener,noreferrer')
+        toast.success(t('Payment page opened'))
+        props.onOpenChange(false)
+      } else {
+        toast.error(
+          res.message && res.message !== 'success'
+            ? res.message
+            : t('Payment request failed')
+        )
+      }
+    } catch {
+      toast.error(t('Payment request failed'))
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  const handlePayEzpay = async () => {
+    if (!effectiveEzpayMethod) {
+      toast.error(t('Please select a payment method'))
+      return
+    }
+
+    setPaying(true)
+    try {
+      const res = await paySubscriptionEzpay({ plan_id: plan.id })
+
+      if (res.message === 'success') {
+        const paymentUrl = getHostedPaymentUrl(res.data)
+        if (!paymentUrl) {
+          toast.error(t('Payment request failed'))
+          return
+        }
+
+        if (!isSafeHttpUrl(paymentUrl)) {
+          toast.error(t('Invalid payment redirect URL'))
+          return
+        }
+
+        window.open(paymentUrl, '_blank', 'noopener,noreferrer')
+        toast.success(t('Payment page opened'))
         props.onOpenChange(false)
       } else {
         toast.error(
@@ -262,10 +406,62 @@ export function SubscriptionPurchaseDialog(props: Props) {
                   )}
                 </div>
               )}
+              {hasInfini && (
+                <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
+                  <Select
+                    value={effectiveInfiniMethod}
+                    onValueChange={setSelectedInfiniMethod}
+                    disabled={limitReached}
+                  >
+                    <SelectTrigger className='flex-1'>
+                      <SelectValue placeholder={t('Select payment method')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(props.infiniMethods || []).map((m) => (
+                        <SelectItem key={m.type} value={m.type}>
+                          {m.name || m.type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={handlePayInfini}
+                    disabled={paying || !effectiveInfiniMethod || limitReached}
+                  >
+                    Infini
+                  </Button>
+                </div>
+              )}
+              {hasEzpay && (
+                <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
+                  <Select
+                    value={effectiveEzpayMethod}
+                    onValueChange={setSelectedEzpayMethod}
+                    disabled={limitReached}
+                  >
+                    <SelectTrigger className='flex-1'>
+                      <SelectValue placeholder={t('Select payment method')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(props.ezpayMethods || []).map((m) => (
+                        <SelectItem key={m.type} value={m.type}>
+                          {m.name || m.type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={handlePayEzpay}
+                    disabled={paying || !effectiveEzpayMethod || limitReached}
+                  >
+                    EZPay
+                  </Button>
+                </div>
+              )}
               {hasEpay && (
                 <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
                   <Select
-                    value={selectedEpayMethod}
+                    value={effectiveEpayMethod}
                     onValueChange={setSelectedEpayMethod}
                     disabled={limitReached}
                   >
@@ -282,7 +478,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
                   </Select>
                   <Button
                     onClick={handlePayEpay}
-                    disabled={paying || !selectedEpayMethod || limitReached}
+                    disabled={paying || !effectiveEpayMethod || limitReached}
                   >
                     {t('Pay')}
                   </Button>

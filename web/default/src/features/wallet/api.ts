@@ -16,6 +16,8 @@ import type {
   CompleteOrderRequest,
   CreemPaymentRequest,
   CreemPaymentResponse,
+  InfiniPaymentResponse,
+  EzpayPaymentResponse,
   WaffoPaymentRequest,
   WaffoPaymentResponse,
   WaffoPancakePaymentRequest,
@@ -76,6 +78,30 @@ export async function calculateStripeAmount(
 }
 
 /**
+ * Calculate payment amount for Infini payment
+ */
+export async function calculateInfiniAmount(
+  request: PaymentRequest
+): Promise<AmountResponse> {
+  const res = await api.post('/api/user/infini/amount', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Calculate payment amount for EZPay payment
+ */
+export async function calculateEzpayAmount(
+  request: AmountRequest
+): Promise<AmountResponse> {
+  const res = await api.post('/api/user/ezpay/amount', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
  * Request regular payment
  */
 export async function requestPayment(
@@ -97,6 +123,30 @@ export async function requestStripePayment(
   request: PaymentRequest
 ): Promise<StripePaymentResponse> {
   const res = await api.post('/api/user/stripe/pay', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Request Infini payment
+ */
+export async function requestInfiniPayment(
+  request: PaymentRequest
+): Promise<InfiniPaymentResponse> {
+  const res = await api.post('/api/user/infini/pay', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Request EZPay payment
+ */
+export async function requestEzpayPayment(
+  request: AmountRequest
+): Promise<EzpayPaymentResponse> {
+  const res = await api.post('/api/user/ezpay/pay', request, {
     skipBusinessError: true,
   } as Record<string, unknown>)
   return res.data

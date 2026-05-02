@@ -114,6 +114,20 @@ export async function paySubscriptionEpay(
   }
 }
 
+export async function paySubscriptionInfini(
+  data: SubscriptionPayRequest & { payment_method: string }
+): Promise<SubscriptionPayResponse> {
+  const res = await api.post('/api/subscription/infini/pay', data)
+  return res.data
+}
+
+export async function paySubscriptionEzpay(
+  data: SubscriptionPayRequest
+): Promise<SubscriptionPayResponse> {
+  const res = await api.post('/api/subscription/ezpay/pay', data)
+  return res.data
+}
+
 // ============================================================================
 // User Self Subscriptions
 // ============================================================================

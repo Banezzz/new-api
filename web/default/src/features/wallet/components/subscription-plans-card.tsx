@@ -52,8 +52,23 @@ interface SubscriptionPlansCardProps {
 
 function getEpayMethods(payMethods: PaymentMethod[] = []): PaymentMethod[] {
   return payMethods.filter(
-    (m) => m?.type && m.type !== 'stripe' && m.type !== 'creem'
+    (m) =>
+      m?.type &&
+      m.type !== 'stripe' &&
+      m.type !== 'creem' &&
+      m.type !== 'ezpay' &&
+      m.type !== 'waffo_pancake' &&
+      !m.type.startsWith('waffo:') &&
+      !m.type.startsWith('infini')
   )
+}
+
+function getInfiniMethods(payMethods: PaymentMethod[] = []): PaymentMethod[] {
+  return payMethods.filter((m) => m?.type && m.type.startsWith('infini'))
+}
+
+function getEzpayMethods(payMethods: PaymentMethod[] = []): PaymentMethod[] {
+  return payMethods.filter((m) => m?.type === 'ezpay')
 }
 
 export function SubscriptionPlansCard({
@@ -81,8 +96,18 @@ export function SubscriptionPlansCard({
   const enableStripe = !!status?.enable_stripe_topup
   const enableCreem = !!topupInfo?.enable_creem_topup
   const enableOnlineTopUp = !!status?.enable_online_topup
+  const enableInfiniTopUp = !!topupInfo?.enable_infini_topup
+  const enableEzpayTopUp = !!topupInfo?.enable_ezpay_topup
   const epayMethods = useMemo(
     () => getEpayMethods(topupInfo?.pay_methods),
+    [topupInfo?.pay_methods]
+  )
+  const infiniMethods = useMemo(
+    () => getInfiniMethods(topupInfo?.pay_methods),
+    [topupInfo?.pay_methods]
+  )
+  const ezpayMethods = useMemo(
+    () => getEzpayMethods(topupInfo?.pay_methods),
     [topupInfo?.pay_methods]
   )
 
@@ -579,7 +604,11 @@ export function SubscriptionPlansCard({
         enableStripe={enableStripe}
         enableCreem={enableCreem}
         enableOnlineTopUp={enableOnlineTopUp}
+        enableInfiniTopUp={enableInfiniTopUp}
+        enableEzpayTopUp={enableEzpayTopUp}
         epayMethods={epayMethods}
+        infiniMethods={infiniMethods}
+        ezpayMethods={ezpayMethods}
         purchaseLimit={
           selectedPlan?.plan?.max_purchase_per_user
             ? Number(selectedPlan.plan.max_purchase_per_user)

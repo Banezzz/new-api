@@ -58,6 +58,23 @@ export function isStripePayment(paymentType: string): boolean {
 }
 
 /**
+ * Check if payment method is Infini.
+ *
+ * Infini can expose multiple configured methods with types such as "infini"
+ * and "infini_card"; they all use the dedicated Infini checkout endpoint.
+ */
+export function isInfiniPayment(paymentType: string): boolean {
+  return paymentType.startsWith(PAYMENT_TYPES.INFINI)
+}
+
+/**
+ * Check if payment method is EZPay.
+ */
+export function isEzpayPayment(paymentType: string): boolean {
+  return paymentType === PAYMENT_TYPES.EZPAY
+}
+
+/**
  * Check if payment method is Waffo Pancake
  *
  * Pancake is a metered-style payment that goes through a dedicated checkout
@@ -108,8 +125,24 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
     return topupInfo.min_topup
   }
 
+  const methodMinimums = (topupInfo.pay_methods || [])
+    .map((method) => Number(method.min_topup || 0))
+    .filter((value) => Number.isFinite(value) && value > 0)
+
+  if (methodMinimums.length > 0) {
+    return Math.min(...methodMinimums)
+  }
+
   if (topupInfo.enable_stripe_topup) {
     return topupInfo.stripe_min_topup
+  }
+
+  if (topupInfo.enable_infini_topup) {
+    return topupInfo.infini_min_topup || DEFAULT_MIN_TOPUP
+  }
+
+  if (topupInfo.enable_ezpay_topup) {
+    return topupInfo.ezpay_min_topup || DEFAULT_MIN_TOPUP
   }
 
   if (topupInfo.enable_waffo_topup) {
