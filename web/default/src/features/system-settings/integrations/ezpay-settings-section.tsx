@@ -19,6 +19,10 @@ export interface EzpaySettingsValues {
   EzpayPublicURL: string
   EzpayPID: string
   EzpaySecretKey: string
+  EzpayCurrency: string
+  EzpayToken: string
+  EzpayNetwork: string
+  EzpayPaymentType: string
   EzpayNotifyURL: string
   EzpayReturnURL: string
   EzpayUnitPrice: number
@@ -68,6 +72,10 @@ export function EzpaySettingsSection(props: Props) {
     )
     const notifyURL = removeTrailingSlash(values.EzpayNotifyURL || '')
     const returnURL = removeTrailingSlash(values.EzpayReturnURL || '')
+    const currency = values.EzpayCurrency?.trim() || ''
+    const token = values.EzpayToken?.trim() || ''
+    const network = values.EzpayNetwork?.trim() || ''
+    const paymentType = values.EzpayPaymentType?.trim() || ''
 
     if (values.EzpayEnabled && !notifyURL && !callbackBase) {
       toast.error(
@@ -91,6 +99,10 @@ export function EzpaySettingsSection(props: Props) {
           value: removeTrailingSlash(values.EzpayPublicURL || ''),
         },
         { key: 'EzpayPID', value: values.EzpayPID || '' },
+        { key: 'EzpayCurrency', value: currency },
+        { key: 'EzpayToken', value: token },
+        { key: 'EzpayNetwork', value: network },
+        { key: 'EzpayPaymentType', value: paymentType },
         { key: 'EzpayNotifyURL', value: notifyURL },
         { key: 'EzpayReturnURL', value: returnURL },
         { key: 'EzpayUnitPrice', value: String(values.EzpayUnitPrice || 1) },
@@ -174,6 +186,30 @@ export function EzpaySettingsSection(props: Props) {
             {...form.register('EzpaySecretKey')}
           />
         </div>
+      </div>
+
+      <div className='grid gap-4 md:grid-cols-4'>
+        <div className='grid gap-1.5'>
+          <Label>{t('Initial fiat currency')}</Label>
+          <Input placeholder='usd' {...form.register('EzpayCurrency')} />
+        </div>
+        <div className='grid gap-1.5'>
+          <Label>{t('Initial payment token')}</Label>
+          <Input placeholder='usdt' {...form.register('EzpayToken')} />
+        </div>
+        <div className='grid gap-1.5'>
+          <Label>{t('Initial payment network')}</Label>
+          <Input placeholder='tron' {...form.register('EzpayNetwork')} />
+        </div>
+        <div className='grid gap-1.5'>
+          <Label>{t('Payment type')}</Label>
+          <Input placeholder='GMPAY' {...form.register('EzpayPaymentType')} />
+        </div>
+        <p className='text-muted-foreground text-xs md:col-span-4'>
+          {t(
+            'Used only for the initial EZPay order. The EZPay checkout can still show other enabled chains and tokens.'
+          )}
+        </p>
       </div>
 
       <div className='grid gap-4 md:grid-cols-2'>

@@ -191,6 +191,10 @@ export type IntegrationSettings = {
   EzpayPublicURL: string
   EzpayPID: string
   EzpaySecretKey: string
+  EzpayCurrency: string
+  EzpayToken: string
+  EzpayNetwork: string
+  EzpayPaymentType: string
   EzpayNotifyURL: string
   EzpayReturnURL: string
   EzpayUnitPrice: number
