@@ -120,6 +120,30 @@ func getEzpayReturnURL() (string, error) {
 	return resolveEzpayURL(serverAddress+"/console/topup?show_history=true", false, "EZPay 跳转地址配置错误")
 }
 
+func getEzpayConfiguredValue(value string, fallback string) string {
+	value = strings.TrimSpace(value)
+	if value != "" {
+		return value
+	}
+	return fallback
+}
+
+func getEzpayOrderCurrency() string {
+	return getEzpayConfiguredValue(setting.EzpayCurrency, setting.EzpayDefaultCurrency)
+}
+
+func getEzpayOrderToken() string {
+	return getEzpayConfiguredValue(setting.EzpayToken, setting.EzpayDefaultToken)
+}
+
+func getEzpayOrderNetwork() string {
+	return getEzpayConfiguredValue(setting.EzpayNetwork, setting.EzpayDefaultNetwork)
+}
+
+func getEzpayOrderPaymentType() string {
+	return getEzpayConfiguredValue(setting.EzpayPaymentType, setting.EzpayDefaultPaymentType)
+}
+
 func RequestEzpayAmount(c *gin.Context) {
 	var req EzpayPayRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -215,14 +239,14 @@ func RequestEzpayPay(c *gin.Context) {
 
 	resp, err := client.CreateTransaction(c.Request.Context(), &service.EzpayCreateTransactionRequest{
 		OrderID:     tradeNo,
-		Currency:    setting.EzpayDefaultCurrency,
-		Token:       setting.EzpayDefaultToken,
-		Network:     setting.EzpayDefaultNetwork,
+		Currency:    getEzpayOrderCurrency(),
+		Token:       getEzpayOrderToken(),
+		Network:     getEzpayOrderNetwork(),
 		Amount:      payMoney,
 		NotifyURL:   notifyURL,
 		RedirectURL: returnURL,
 		Name:        fmt.Sprintf("Recharge %d credits for user %d", req.Amount, user.Id),
-		PaymentType: setting.EzpayDefaultPaymentType,
+		PaymentType: getEzpayOrderPaymentType(),
 	})
 	if err != nil {
 		topUp.Status = common.TopUpStatusFailed
@@ -340,14 +364,14 @@ func SubscriptionRequestEzpayPay(c *gin.Context) {
 
 	resp, err := client.CreateTransaction(c.Request.Context(), &service.EzpayCreateTransactionRequest{
 		OrderID:     order.TradeNo,
-		Currency:    setting.EzpayDefaultCurrency,
-		Token:       setting.EzpayDefaultToken,
-		Network:     setting.EzpayDefaultNetwork,
+		Currency:    getEzpayOrderCurrency(),
+		Token:       getEzpayOrderToken(),
+		Network:     getEzpayOrderNetwork(),
 		Amount:      plan.PriceAmount,
 		NotifyURL:   notifyURL,
 		RedirectURL: returnURL,
 		Name:        fmt.Sprintf("Subscription %s for user %d", plan.Title, user.Id),
-		PaymentType: setting.EzpayDefaultPaymentType,
+		PaymentType: getEzpayOrderPaymentType(),
 	})
 	if err != nil {
 		order.Status = common.TopUpStatusFailed

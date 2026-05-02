@@ -64,3 +64,34 @@ func TestResolveEzpayURLs(t *testing.T) {
 	_, err = getEzpayNotifyURL()
 	require.Error(t, err)
 }
+
+func TestGetEzpayOrderConfigUsesConfiguredValuesAndDefaults(t *testing.T) {
+	originalCurrency := setting.EzpayCurrency
+	originalToken := setting.EzpayToken
+	originalNetwork := setting.EzpayNetwork
+	originalPaymentType := setting.EzpayPaymentType
+	t.Cleanup(func() {
+		setting.EzpayCurrency = originalCurrency
+		setting.EzpayToken = originalToken
+		setting.EzpayNetwork = originalNetwork
+		setting.EzpayPaymentType = originalPaymentType
+	})
+
+	setting.EzpayCurrency = "eur"
+	setting.EzpayToken = "usdc"
+	setting.EzpayNetwork = "polygon"
+	setting.EzpayPaymentType = "GMPAY"
+	require.Equal(t, "eur", getEzpayOrderCurrency())
+	require.Equal(t, "usdc", getEzpayOrderToken())
+	require.Equal(t, "polygon", getEzpayOrderNetwork())
+	require.Equal(t, "GMPAY", getEzpayOrderPaymentType())
+
+	setting.EzpayCurrency = ""
+	setting.EzpayToken = ""
+	setting.EzpayNetwork = ""
+	setting.EzpayPaymentType = ""
+	require.Equal(t, setting.EzpayDefaultCurrency, getEzpayOrderCurrency())
+	require.Equal(t, setting.EzpayDefaultToken, getEzpayOrderToken())
+	require.Equal(t, setting.EzpayDefaultNetwork, getEzpayOrderNetwork())
+	require.Equal(t, setting.EzpayDefaultPaymentType, getEzpayOrderPaymentType())
+}

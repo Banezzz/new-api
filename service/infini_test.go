@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/setting"
 	"github.com/stretchr/testify/require"
 )
@@ -91,4 +92,44 @@ func TestCreateOrderReissuesCheckoutURLWhenMissing(t *testing.T) {
 	require.Equal(t, "req_123", resp.RequestID)
 	require.Equal(t, "https://checkout.infini.money/pay/abc", resp.CheckoutURL)
 	require.Equal(t, "token_123", resp.Token)
+}
+
+func TestCreateOrderOmitPayMethodsUnlessConfigured(t *testing.T) {
+	payloads := make([]map[string]any, 0, 2)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/v1/acquiring/order", r.URL.Path)
+		require.Equal(t, http.MethodPost, r.Method)
+
+		var payload map[string]any
+		require.NoError(t, common.DecodeJson(r.Body, &payload))
+		payloads = append(payloads, payload)
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"code":0,"message":"","data":{"order_id":"ord_123","request_id":"req_123","checkout_url":"https://checkout.infini.money/pay/abc"}}`))
+	}))
+	defer server.Close()
+
+	client := &InfiniClient{
+		KeyID:     "test_key",
+		SecretKey: "test_secret",
+		BaseURL:   server.URL,
+		Client:    server.Client(),
+	}
+
+	_, err := client.CreateOrder(context.Background(), &InfiniCreateOrderRequest{
+		Amount:    "1",
+		RequestID: "req_default",
+	})
+	require.NoError(t, err)
+
+	_, err = client.CreateOrder(context.Background(), &InfiniCreateOrderRequest{
+		Amount:     "1",
+		RequestID:  "req_crypto",
+		PayMethods: []int{1},
+	})
+	require.NoError(t, err)
+
+	require.Len(t, payloads, 2)
+	require.NotContains(t, payloads[0], "pay_methods")
+	require.Equal(t, []any{float64(1)}, payloads[1]["pay_methods"])
 }

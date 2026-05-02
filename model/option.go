@@ -108,6 +108,10 @@ func InitOptionMap() {
 	common.OptionMap["EzpayPublicURL"] = setting.EzpayPublicURL
 	common.OptionMap["EzpayPID"] = setting.EzpayPID
 	common.OptionMap["EzpaySecretKey"] = setting.EzpaySecretKey
+	common.OptionMap["EzpayCurrency"] = setting.EzpayCurrency
+	common.OptionMap["EzpayToken"] = setting.EzpayToken
+	common.OptionMap["EzpayNetwork"] = setting.EzpayNetwork
+	common.OptionMap["EzpayPaymentType"] = setting.EzpayPaymentType
 	common.OptionMap["EzpayNotifyURL"] = setting.EzpayNotifyURL
 	common.OptionMap["EzpayReturnURL"] = setting.EzpayReturnURL
 	common.OptionMap["EzpayUnitPrice"] = strconv.FormatFloat(setting.EzpayUnitPrice, 'f', -1, 64)
@@ -445,6 +449,14 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.EzpayPID = value
 	case "EzpaySecretKey":
 		setting.EzpaySecretKey = value
+	case "EzpayCurrency":
+		setting.EzpayCurrency = value
+	case "EzpayToken":
+		setting.EzpayToken = value
+	case "EzpayNetwork":
+		setting.EzpayNetwork = value
+	case "EzpayPaymentType":
+		setting.EzpayPaymentType = value
 	case "EzpayNotifyURL":
 		setting.EzpayNotifyURL = value
 	case "EzpayReturnURL":
