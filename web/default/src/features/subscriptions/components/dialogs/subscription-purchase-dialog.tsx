@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Crown, CalendarClock, Package } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -13,6 +13,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -96,12 +97,37 @@ function resolveSelectedPaymentMethod(
   return methods?.[0]?.type || ''
 }
 
+function getSelectedPaymentMethodLabel(
+  selected: string,
+  methods: PaymentMethod[] | undefined,
+  fallback: string
+): string {
+  return (
+    methods?.find((method) => method.type === selected)?.name ||
+    selected ||
+    fallback
+  )
+}
+
 export function SubscriptionPurchaseDialog(props: Props) {
   const { t } = useTranslation()
   const [paying, setPaying] = useState(false)
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('')
   const [selectedInfiniMethod, setSelectedInfiniMethod] = useState('')
   const [selectedEzpayMethod, setSelectedEzpayMethod] = useState('')
+
+  useEffect(() => {
+    if (!props.open) {
+      setSelectedEpayMethod('')
+      setSelectedInfiniMethod('')
+      setSelectedEzpayMethod('')
+      return
+    }
+
+    setSelectedEpayMethod(props.epayMethods?.[0]?.type || '')
+    setSelectedInfiniMethod(props.infiniMethods?.[0]?.type || '')
+    setSelectedEzpayMethod(props.ezpayMethods?.[0]?.type || '')
+  }, [props.open, props.epayMethods, props.infiniMethods, props.ezpayMethods])
 
   const plan = props.plan?.plan
   if (!plan) return null
@@ -128,6 +154,22 @@ export function SubscriptionPurchaseDialog(props: Props) {
     props.enableEzpayTopUp && (props.ezpayMethods || []).length > 0
   const hasAnyPayment =
     hasStripe || hasCreem || hasEpay || hasInfini || hasEzpay
+  const selectedEpayMethodLabel =
+    getSelectedPaymentMethodLabel(
+      selectedEpayMethod,
+      props.epayMethods,
+      t('Select payment method')
+    )
+  const selectedInfiniMethodLabel = getSelectedPaymentMethodLabel(
+    selectedInfiniMethod,
+    props.infiniMethods,
+    t('Select payment method')
+  )
+  const selectedEzpayMethodLabel = getSelectedPaymentMethodLabel(
+    selectedEzpayMethod,
+    props.ezpayMethods,
+    t('Select payment method')
+  )
   const totalAmount = Number(plan.total_amount || 0)
   const price = Number(plan.price_amount || 0).toFixed(2)
   const limitReached =
@@ -409,24 +451,34 @@ export function SubscriptionPurchaseDialog(props: Props) {
               {hasInfini && (
                 <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
                   <Select
-                    value={effectiveInfiniMethod}
-                    onValueChange={setSelectedInfiniMethod}
+                    items={[
+                      ...(props.infiniMethods || []).map((m) => ({
+                        value: m.type,
+                        label: m.name || m.type,
+                      })),
+                    ]}
+                    value={selectedInfiniMethod}
+                    onValueChange={(v) =>
+                      v !== null && setSelectedInfiniMethod(v)
+                    }
                     disabled={limitReached}
                   >
                     <SelectTrigger className='flex-1'>
-                      <SelectValue placeholder={t('Select payment method')} />
+                      <SelectValue>{selectedInfiniMethodLabel}</SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
-                      {(props.infiniMethods || []).map((m) => (
-                        <SelectItem key={m.type} value={m.type}>
-                          {m.name || m.type}
-                        </SelectItem>
-                      ))}
+                    <SelectContent alignItemWithTrigger={false}>
+                      <SelectGroup>
+                        {(props.infiniMethods || []).map((m) => (
+                          <SelectItem key={m.type} value={m.type}>
+                            {m.name || m.type}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <Button
                     onClick={handlePayInfini}
-                    disabled={paying || !effectiveInfiniMethod || limitReached}
+                    disabled={paying || !selectedInfiniMethod || limitReached}
                   >
                     Infini
                   </Button>
@@ -435,24 +487,34 @@ export function SubscriptionPurchaseDialog(props: Props) {
               {hasEzpay && (
                 <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
                   <Select
-                    value={effectiveEzpayMethod}
-                    onValueChange={setSelectedEzpayMethod}
+                    items={[
+                      ...(props.ezpayMethods || []).map((m) => ({
+                        value: m.type,
+                        label: m.name || m.type,
+                      })),
+                    ]}
+                    value={selectedEzpayMethod}
+                    onValueChange={(v) =>
+                      v !== null && setSelectedEzpayMethod(v)
+                    }
                     disabled={limitReached}
                   >
                     <SelectTrigger className='flex-1'>
-                      <SelectValue placeholder={t('Select payment method')} />
+                      <SelectValue>{selectedEzpayMethodLabel}</SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
-                      {(props.ezpayMethods || []).map((m) => (
-                        <SelectItem key={m.type} value={m.type}>
-                          {m.name || m.type}
-                        </SelectItem>
-                      ))}
+                    <SelectContent alignItemWithTrigger={false}>
+                      <SelectGroup>
+                        {(props.ezpayMethods || []).map((m) => (
+                          <SelectItem key={m.type} value={m.type}>
+                            {m.name || m.type}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <Button
                     onClick={handlePayEzpay}
-                    disabled={paying || !effectiveEzpayMethod || limitReached}
+                    disabled={paying || !selectedEzpayMethod || limitReached}
                   >
                     EZPay
                   </Button>
@@ -461,24 +523,34 @@ export function SubscriptionPurchaseDialog(props: Props) {
               {hasEpay && (
                 <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
                   <Select
-                    value={effectiveEpayMethod}
-                    onValueChange={setSelectedEpayMethod}
+                    items={[
+                      ...(props.epayMethods || []).map((m) => ({
+                        value: m.type,
+                        label: m.name || m.type,
+                      })),
+                    ]}
+                    value={selectedEpayMethod}
+                    onValueChange={(v) =>
+                      v !== null && setSelectedEpayMethod(v)
+                    }
                     disabled={limitReached}
                   >
                     <SelectTrigger className='flex-1'>
-                      <SelectValue placeholder={t('Select payment method')} />
+                      <SelectValue>{selectedEpayMethodLabel}</SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
-                      {(props.epayMethods || []).map((m) => (
-                        <SelectItem key={m.type} value={m.type}>
-                          {m.name || m.type}
-                        </SelectItem>
-                      ))}
+                    <SelectContent alignItemWithTrigger={false}>
+                      <SelectGroup>
+                        {(props.epayMethods || []).map((m) => (
+                          <SelectItem key={m.type} value={m.type}>
+                            {m.name || m.type}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <Button
                     onClick={handlePayEpay}
-                    disabled={paying || !effectiveEpayMethod || limitReached}
+                    disabled={paying || !selectedEpayMethod || limitReached}
                   >
                     {t('Pay')}
                   </Button>
