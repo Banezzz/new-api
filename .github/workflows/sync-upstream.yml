@@ -85,17 +85,17 @@ jobs:
             echo "⚠️  $CONFLICTS file(s) with conflicts."
           fi
 
-      # ── Resolve conflicts via Claude ───────────────────────────────────────
+# ── Resolve conflicts via LLM ───────────────────────────────────────────
       - name: Setup Node.js
         if: steps.merge.outputs.result == 'conflict'
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Resolve conflicts with Claude
+      - name: Resolve conflicts with LLM
         if: steps.merge.outputs.result == 'conflict'
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: node scripts/resolve-merge-conflicts.mjs
 
       # ── Build verification ─────────────────────────────────────────────────
@@ -127,7 +127,7 @@ jobs:
           if [ "${{ steps.merge.outputs.result }}" = "clean" ]; then
             MSG="Merge upstream/main: sync ${{ steps.check.outputs.count }} new commits (clean)"
           else
-            MSG="Merge upstream/main: sync ${{ steps.check.outputs.count }} new commits (conflicts resolved by Claude)"
+            MSG="Merge upstream/main: sync ${{ steps.check.outputs.count }} new commits (conflicts resolved by LLM)"
           fi
           git commit -m "$MSG" || echo "Nothing to commit"
 
@@ -181,12 +181,12 @@ jobs:
             --body "## Automated Upstream Sync — AI Conflict Resolution
 
           **Commits synced:** ${{ steps.check.outputs.count }}
-          **Merge result:** ⚠️ ${{ steps.merge.outputs.conflict_count }} conflicted file(s) resolved by Claude
+          **Merge result:** ⚠️ ${{ steps.merge.outputs.conflict_count }} conflicted file(s) resolved by LLM
           **Build verification:** ✅ Passed
 
           ### How it works
 
-          Conflicts were resolved by Claude following \`docs/merge-upstream-policy.md\`.
+          Conflicts were resolved by an LLM following \`docs/merge-upstream-policy.md\`.
 
           ### ⚠️ Review checklist
 
