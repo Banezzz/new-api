@@ -27,7 +27,7 @@ import { execSync } from "node:child_process";
 const POLICY_PATH = "docs/merge-upstream-policy.md";
 
 const API_URL = process.env.LLM_API_URL || "https://api.deepseek.com/v1/chat/completions";
-const MODEL   = process.env.LLM_MODEL   || "deepseek-chat";
+const MODEL   = process.env.LLM_MODEL   || "deepseek-v4-pro";
 const API_KEY = process.env.LLM_API_KEY;
 
 const MAX_RETRIES    = 2;
