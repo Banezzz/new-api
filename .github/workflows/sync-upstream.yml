@@ -1,0 +1,202 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    # Daily at 02:00 UTC (10:00 UTC+8)
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run — check only, do not create PR"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UPSTREAM_REPO: QuantumNous/new-api
+  UPSTREAM_BRANCH: main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # ── Setup ──────────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream "https://github.com/${{ env.UPSTREAM_REPO }}.git" || true
+
+      - name: Fetch upstream
+        run: git fetch upstream "${{ env.UPSTREAM_BRANCH }}"
+
+      # ── Detect new commits ─────────────────────────────────────────────────
+      - name: Check for new upstream commits
+        id: check
+        run: |
+          BASE=$(git merge-base HEAD "upstream/${{ env.UPSTREAM_BRANCH }}")
+          HEAD_UP=$(git rev-parse "upstream/${{ env.UPSTREAM_BRANCH }}")
+          if [ "$BASE" = "$HEAD_UP" ]; then
+            echo "has_new=false" >> "$GITHUB_OUTPUT"
+            echo "✅ Up to date — no new commits."
+          else
+            COUNT=$(git rev-list --count "$BASE".."$HEAD_UP")
+            echo "has_new=true"  >> "$GITHUB_OUTPUT"
+            echo "count=$COUNT"  >> "$GITHUB_OUTPUT"
+            echo "📝 $COUNT new upstream commit(s) detected."
+          fi
+
+      # ── Merge attempt ──────────────────────────────────────────────────────
+      - name: Create sync branch
+        if: steps.check.outputs.has_new == 'true'
+        id: branch
+        run: |
+          BRANCH="sync/upstream-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Attempt merge
+        if: steps.check.outputs.has_new == 'true'
+        id: merge
+        run: |
+          set +e
+          git merge "upstream/${{ env.UPSTREAM_BRANCH }}" --no-edit \
+            -m "Merge upstream/${{ env.UPSTREAM_BRANCH }} into sync branch"
+          EXIT=$?
+          set -e
+          if [ $EXIT -eq 0 ]; then
+            echo "result=clean" >> "$GITHUB_OUTPUT"
+            echo "✅ Clean merge — no conflicts."
+          else
+            CONFLICTS=$(git diff --name-only --diff-filter=U | wc -l)
+            echo "result=conflict"       >> "$GITHUB_OUTPUT"
+            echo "conflict_count=$CONFLICTS" >> "$GITHUB_OUTPUT"
+            echo "⚠️  $CONFLICTS file(s) with conflicts."
+          fi
+
+      # ── Resolve conflicts via Claude ───────────────────────────────────────
+      - name: Setup Node.js
+        if: steps.merge.outputs.result == 'conflict'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Resolve conflicts with Claude
+        if: steps.merge.outputs.result == 'conflict'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/resolve-merge-conflicts.mjs
+
+      # ── Build verification ─────────────────────────────────────────────────
+      - name: Setup Go
+        if: steps.check.outputs.has_new == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Build verification
+        if: steps.check.outputs.has_new == 'true'
+        run: go build -o /dev/null .
+
+      # ── No-conflict-marker verification ────────────────────────────────────
+      - name: Verify no conflict markers remain
+        if: steps.merge.outputs.result == 'conflict'
+        run: |
+          if git diff --cached --check 2>&1 | grep -q "conflict marker"; then
+            echo "❌ Conflict markers still present after resolution!"
+            exit 1
+          fi
+          echo "✅ No conflict markers remain."
+
+      # ── Commit & push ──────────────────────────────────────────────────────
+      - name: Commit
+        if: steps.check.outputs.has_new == 'true'
+        run: |
+          git add -A
+          if [ "${{ steps.merge.outputs.result }}" = "clean" ]; then
+            MSG="Merge upstream/main: sync ${{ steps.check.outputs.count }} new commits (clean)"
+          else
+            MSG="Merge upstream/main: sync ${{ steps.check.outputs.count }} new commits (conflicts resolved by Claude)"
+          fi
+          git commit -m "$MSG" || echo "Nothing to commit"
+
+      - name: Push
+        if: steps.check.outputs.has_new == 'true'
+        run: git push origin "${{ steps.branch.outputs.name }}"
+
+      # ── Dry run stop ───────────────────────────────────────────────────────
+      - name: Dry run — stop here
+        if: steps.check.outputs.has_new == 'true' && inputs.dry_run == true
+        run: echo "🏁 Dry run complete. Branch pushed but no PR created."
+
+      # ── Create PR ──────────────────────────────────────────────────────────
+      - name: Ensure labels exist
+        if: steps.check.outputs.has_new == 'true' && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "upstream-sync"  --description "Automated upstream sync"           --color "0075ca" || true
+          gh label create "ai-resolved"    --description "Merge conflicts resolved by AI"    --color "d4c5f9" || true
+          gh label create "needs-review"   --description "Requires human review before merge" --color "fbca04" || true
+
+      - name: Create PR (clean merge)
+        if: steps.check.outputs.has_new == 'true' && steps.merge.outputs.result == 'clean' && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "${{ steps.branch.outputs.name }}" \
+            --title "sync: auto-merge upstream/main (${{ steps.check.outputs.count }} new commits)" \
+            --body "## Automated Upstream Sync
+
+          **Commits synced:** ${{ steps.check.outputs.count }}
+          **Merge result:** ✅ Clean (no conflicts)
+          **Build verification:** ✅ Passed
+
+          This PR was automatically created by the upstream sync workflow.
+          Review the upstream changelog before merging." \
+            --label "upstream-sync"
+
+      - name: Create PR (AI-resolved conflicts)
+        if: steps.check.outputs.has_new == 'true' && steps.merge.outputs.result == 'conflict' && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "${{ steps.branch.outputs.name }}" \
+            --title "sync: merge upstream/main (${{ steps.check.outputs.count }} commits, AI-resolved conflicts)" \
+            --body "## Automated Upstream Sync — AI Conflict Resolution
+
+          **Commits synced:** ${{ steps.check.outputs.count }}
+          **Merge result:** ⚠️ ${{ steps.merge.outputs.conflict_count }} conflicted file(s) resolved by Claude
+          **Build verification:** ✅ Passed
+
+          ### How it works
+
+          Conflicts were resolved by Claude following \`docs/merge-upstream-policy.md\`.
+
+          ### ⚠️ Review checklist
+
+          - [ ] Conflict resolutions match the policy document
+          - [ ] Infini/EZPay payment code is preserved
+          - [ ] Custom branding (Home, Footer) is preserved
+          - [ ] No upstream features were accidentally dropped
+          - [ ] Go build passes locally
+
+          > If resolutions are wrong, update \`docs/merge-upstream-policy.md\` and re-run the workflow." \
+            --label "upstream-sync" \
+            --label "ai-resolved" \
+            --label "needs-review"
