@@ -135,7 +135,6 @@ const SubscriptionsPage = () => {
           enableInfini={enableInfini}
           complianceConfirmed={complianceConfirmed}
         />
-        />
       </CardPro>
     </>
   );

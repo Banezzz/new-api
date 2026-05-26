@@ -331,6 +331,7 @@ const PaymentSetting = () => {
                 : { opacity: 0.4, pointerEvents: 'none' }
             }
           >
+            <Tabs type='card' defaultActiveKey='general' contentStyle={{ paddingTop: 24 }}>
             <Tabs.TabPane tab={t('通用设置')} itemKey='general'>
               <SettingsGeneralPayment
                 options={inputs}
@@ -387,7 +388,8 @@ const PaymentSetting = () => {
             {/*    hideSectionTitle*/}
             {/*  />*/}
             {/*</Tabs.TabPane>*/}
-          </Tabs>
+            </Tabs>
+          </div>
         </Card>
         <RiskAcknowledgementModal
           visible={complianceVisible}
