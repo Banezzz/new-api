@@ -33,6 +33,39 @@ interface Props {
   defaultValues: EzpaySettingsValues
 }
 
+function isLikelyPublicHttpUrl(value: string) {
+  try {
+    const parsedUrl = new URL(value)
+    const scheme = parsedUrl.protocol.toLowerCase()
+    const host = parsedUrl.hostname.toLowerCase().replace(/\.$/, '')
+
+    if (scheme !== 'http:' && scheme !== 'https:') {
+      return false
+    }
+    if (
+      !host ||
+      host === 'localhost' ||
+      host.endsWith('.localhost') ||
+      host.endsWith('.local') ||
+      host.endsWith('.internal')
+    ) {
+      return false
+    }
+    if (
+      /^127\./.test(host) ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+    ) {
+      return false
+    }
+
+    return host.includes('.')
+  } catch {
+    return false
+  }
+}
+
 export function EzpaySettingsSection(props: Props) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
@@ -52,12 +85,19 @@ export function EzpaySettingsSection(props: Props) {
   }, [props.defaultValues, form])
 
   const callbackAddress = useMemo(() => {
+    const customCallbackAddress = removeTrailingSlash(
+      props.defaultValues.CustomCallbackAddress || ''
+    )
+    const serverAddress = removeTrailingSlash(
+      props.defaultValues.ServerAddress || ''
+    )
+
     return (
-      removeTrailingSlash(
-        props.defaultValues.CustomCallbackAddress ||
-          props.defaultValues.ServerAddress ||
-          ''
-      ) || t('site address')
+      (isLikelyPublicHttpUrl(customCallbackAddress) && customCallbackAddress) ||
+      (isLikelyPublicHttpUrl(serverAddress) && serverAddress) ||
+      customCallbackAddress ||
+      serverAddress ||
+      t('site address')
     )
   }, [
     props.defaultValues.CustomCallbackAddress,
@@ -129,16 +169,22 @@ export function EzpaySettingsSection(props: Props) {
     }
   }
 
+  const configuredNotifyURL = removeTrailingSlash(
+    form.watch('EzpayNotifyURL') || ''
+  )
+  const webhookURL = isLikelyPublicHttpUrl(configuredNotifyURL)
+    ? configuredNotifyURL
+    : `${callbackAddress}/api/ezpay/webhook`
+
   return (
-    <SettingsSection
-      title={t('EZPay Payment Gateway')}
-      description={t('Configure EZPay hosted checkout integration')}
-    >
+    <SettingsSection title={t('EZPay Payment Gateway')}>
+      <p className='text-muted-foreground text-sm'>
+        {t('Configure EZPay hosted checkout integration')}
+      </p>
+
       <Alert>
         <AlertDescription className='text-xs'>
-          {t('Webhook URL')}:{' '}
-          {form.watch('EzpayNotifyURL') ||
-            `${callbackAddress}/api/ezpay/webhook`}
+          {t('Webhook URL')}: {webhookURL}
         </AlertDescription>
       </Alert>
 
@@ -216,7 +262,7 @@ export function EzpaySettingsSection(props: Props) {
         <div className='grid gap-1.5'>
           <Label>{t('Custom notify URL')}</Label>
           <Input
-            placeholder='http://new-api:3000/api/ezpay/webhook'
+            placeholder='https://console.example.com/api/ezpay/webhook'
             {...form.register('EzpayNotifyURL')}
           />
         </div>
