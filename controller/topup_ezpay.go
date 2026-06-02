@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -96,16 +97,87 @@ func resolveEzpayURL(rawURL string, emptyAllowed bool, emptyError string) (strin
 	return strings.TrimRight(rawURL, "/"), nil
 }
 
-func getEzpayNotifyURL() (string, error) {
-	if strings.TrimSpace(setting.EzpayNotifyURL) != "" {
-		return resolveEzpayURL(setting.EzpayNotifyURL, false, "请先配置 EZPay 回调地址")
+func isLikelyPublicEzpayHTTPURL(rawURL string) bool {
+	parsedURL, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return false
 	}
 
-	callbackAddress := strings.TrimRight(strings.TrimSpace(service.GetCallbackAddress()), "/")
-	if callbackAddress == "" {
+	scheme := strings.ToLower(parsedURL.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return false
+	}
+
+	host := strings.Trim(strings.ToLower(parsedURL.Hostname()), ".")
+	if host == "" ||
+		host == "localhost" ||
+		strings.HasSuffix(host, ".localhost") ||
+		strings.HasSuffix(host, ".local") ||
+		strings.HasSuffix(host, ".internal") {
+		return false
+	}
+
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsGlobalUnicast() &&
+			!ip.IsPrivate() &&
+			!ip.IsLoopback() &&
+			!ip.IsLinkLocalUnicast() &&
+			!ip.IsLinkLocalMulticast() &&
+			!ip.IsUnspecified() &&
+			!ip.IsMulticast()
+	}
+
+	return strings.Contains(host, ".")
+}
+
+func buildEzpayWebhookURL(baseURL string) (string, error) {
+	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if baseURL == "" {
+		return "", errors.New("请先配置 EZPay 回调地址")
+	}
+	return resolveEzpayURL(baseURL+"/api/ezpay/webhook", false, "请先配置 EZPay 回调地址")
+}
+
+func getEzpayPublicNotifyURL() (string, bool) {
+	for _, baseURL := range []string{
+		operation_setting.CustomCallbackAddress,
+		system_setting.ServerAddress,
+	} {
+		notifyURL, err := buildEzpayWebhookURL(baseURL)
+		if err == nil && isLikelyPublicEzpayHTTPURL(notifyURL) {
+			return notifyURL, true
+		}
+	}
+	return "", false
+}
+
+func errEzpayPublicNotifyURLRequired() error {
+	return errors.New("EZPay 回调地址必须是公网 HTTP(S) URL，请配置公网 ServerAddress 或 EZPay 自定义回调地址")
+}
+
+func getEzpayNotifyURL() (string, error) {
+	if strings.TrimSpace(setting.EzpayNotifyURL) != "" {
+		notifyURL, err := resolveEzpayURL(setting.EzpayNotifyURL, false, "请先配置 EZPay 回调地址")
+		if err != nil {
+			return "", err
+		}
+		if isLikelyPublicEzpayHTTPURL(notifyURL) {
+			return notifyURL, nil
+		}
+		if publicNotifyURL, ok := getEzpayPublicNotifyURL(); ok {
+			return publicNotifyURL, nil
+		}
+		return "", errEzpayPublicNotifyURLRequired()
+	}
+
+	if publicNotifyURL, ok := getEzpayPublicNotifyURL(); ok {
+		return publicNotifyURL, nil
+	}
+
+	if strings.TrimSpace(service.GetCallbackAddress()) == "" {
 		return "", errors.New("请先配置服务器地址、回调地址或 EZPay 自定义回调地址")
 	}
-	return resolveEzpayURL(callbackAddress+"/api/ezpay/webhook", false, "请先配置 EZPay 回调地址")
+	return "", errEzpayPublicNotifyURLRequired()
 }
 
 func getEzpayReturnURL() (string, error) {

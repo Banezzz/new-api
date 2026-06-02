@@ -49,10 +49,38 @@ func TestResolveEzpayURLs(t *testing.T) {
 	})
 
 	setting.EzpayNotifyURL = ""
-	operation_setting.CustomCallbackAddress = "http://new-api:3000/"
+	operation_setting.CustomCallbackAddress = "https://callback.example.com/"
+	system_setting.ServerAddress = "https://console.example.com/"
 	notifyURL, err := getEzpayNotifyURL()
 	require.NoError(t, err)
-	require.Equal(t, "http://new-api:3000/api/ezpay/webhook", notifyURL)
+	require.Equal(t, "https://callback.example.com/api/ezpay/webhook", notifyURL)
+
+	setting.EzpayNotifyURL = ""
+	operation_setting.CustomCallbackAddress = "http://new-api:3000/"
+	system_setting.ServerAddress = "https://console.example.com/"
+	notifyURL, err = getEzpayNotifyURL()
+	require.NoError(t, err)
+	require.Equal(t, "https://console.example.com/api/ezpay/webhook", notifyURL)
+
+	setting.EzpayNotifyURL = "https://pay.example.com/hooks/ezpay/"
+	operation_setting.CustomCallbackAddress = "http://new-api:3000/"
+	system_setting.ServerAddress = "https://console.example.com/"
+	notifyURL, err = getEzpayNotifyURL()
+	require.NoError(t, err)
+	require.Equal(t, "https://pay.example.com/hooks/ezpay", notifyURL)
+
+	setting.EzpayNotifyURL = "http://new-api:3000/api/ezpay/webhook"
+	operation_setting.CustomCallbackAddress = ""
+	system_setting.ServerAddress = "https://console.example.com/"
+	notifyURL, err = getEzpayNotifyURL()
+	require.NoError(t, err)
+	require.Equal(t, "https://console.example.com/api/ezpay/webhook", notifyURL)
+
+	setting.EzpayNotifyURL = ""
+	operation_setting.CustomCallbackAddress = "http://new-api:3000/"
+	system_setting.ServerAddress = ""
+	_, err = getEzpayNotifyURL()
+	require.Error(t, err)
 
 	setting.EzpayReturnURL = ""
 	system_setting.ServerAddress = "https://console.example.com/"
