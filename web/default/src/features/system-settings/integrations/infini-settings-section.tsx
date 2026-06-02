@@ -174,10 +174,11 @@ export function InfiniSettingsSection(props: Props) {
   }
 
   return (
-    <SettingsSection
-      title={t('Infini Payment Gateway')}
-      description={t('Configure Infini hosted checkout integration')}
-    >
+    <SettingsSection title={t('Infini Payment Gateway')}>
+      <p className='text-muted-foreground text-sm'>
+        {t('Configure Infini hosted checkout integration')}
+      </p>
+
       <Alert>
         <AlertDescription className='text-xs'>
           {t('Webhook URL')}: {callbackAddress}/api/infini/webhook
