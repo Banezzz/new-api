@@ -186,7 +186,7 @@ type PaymentComplianceDefaults = {
 }
 
 type PaymentSettingsSectionProps = {
-  defaultValues: PaymentFormValues
+  defaultValues: PaymentBaseFormValues
   infiniDefaultValues: InfiniSettingsValues
   ezpayDefaultValues: EzpaySettingsValues
   waffoDefaultValues: WaffoSettingsValues
@@ -1553,15 +1553,6 @@ export function PaymentSettingsSection({
       <Separator />
 
       <EzpaySettingsSection defaultValues={ezpayDefaultValues} />
-
-      <Separator />
-
-      <WaffoSettingsSection defaultValues={waffoDefaultValues} />
-
-      <Separator />
-
-      <WaffoPancakeSettingsSection defaultValues={waffoPancakeDefaultValues} />
-      {/* eslint-enable react-hooks/refs */}
     </SettingsSection>
   )
 }
