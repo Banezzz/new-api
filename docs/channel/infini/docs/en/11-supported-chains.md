@@ -25,13 +25,13 @@
 
 Currently available testnet for actual on-chain payment testing:
 
-**✅ Tron Testnet (Nile Testnet)**
+**✅ Tron Testnet (Shasta Testnet)**
 
 Currently supported test tokens:
 
 | Chain | Available Tokens |
 |  --- | --- |
-| **Tron Testnet (Nile)** | **USDT (Test Token)** |
+| **Tron Testnet (Shasta)** | **USDT (Test Token)** |
 
 
 **❗ When making payment, please select:**
@@ -61,7 +61,7 @@ To test card payment functionality, you can use the following test card:
 
 **TronLink** browser extension wallet:
 
-👉 https://www.tronlink.org/
+👉 [https://www.tronlink.org/](https://www.tronlink.org/)
 
 #### **Step 2: Switch to Testnet**
 
@@ -69,7 +69,7 @@ Open TronLink → Network → Select:
 
 
 ```
-Nile Testnet
+Shasta Testnet
 ```
 
 #### **Step 3: Get Test Tokens**
@@ -82,14 +82,18 @@ You need two test assets:
 
 Test token faucet (official):
 
-👉 https://nileex.io/join/getJoinPage
+👉 [https://shasta.tronex.io/join/getJoinPage](https://shasta.tronex.io/join/getJoinPage)
 (Claim Test Coins and USDT Test Coins)
+
+If **test TRX** or **test USDT** does not appear under TronLink’s **Assets** tab after you claim them, check the same address on the **Shasta** testnet block explorer instead (for example [shasta.tronscan.org](https://shasta.tronscan.org/)) — balances and token transfers are often easier to verify there than inside the wallet UI.
+
+Shasta testnet explorer — viewing address and test tokens
 
 #### **Step 4: Initiate Test Payment**
 
 After entering Infini's test environment checkout page:
 
-- Switch wallet to Nile Testnet
+- Switch wallet to Shasta Testnet
 - Select payment method: **USDT (Tron Testnet)**
 - Pay with test tokens
 
@@ -119,7 +123,7 @@ Webhooks will also be triggered normally and can be used for joint debugging.
 
 Please confirm:
 
-- Is wallet on **Nile Testnet**
+- Is wallet on **Shasta Testnet**
 - Does wallet have **USDT Test Coins**
 - Does wallet have enough **TRX** for Gas
 

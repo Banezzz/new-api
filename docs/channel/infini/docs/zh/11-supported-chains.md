@@ -25,13 +25,13 @@
 
 目前可用于实际链上测试付款的测试链为：
 
-**✅ Tron Testnet（Nile Testnet）**
+**✅ Tron Testnet（Shasta Testnet）**
 
 当前支持的测试代币：
 
 | 链 | 可用代币 |
 |  --- | --- |
-| **Tron Testnet (Nile)** | **USDT（测试币）** |
+| **Tron Testnet (Shasta)** | **USDT（测试币）** |
 
 
 **❗ 支付时请选择：**
@@ -69,7 +69,7 @@
 
 
 ```
-Nile Testnet
+Shasta Testnet
 ```
 
 #### **步骤 3：获取测试币**
@@ -82,14 +82,18 @@ Nile Testnet
 
 测试币获取地址（官方水龙头）：
 
-👉 https://nileex.io/join/getJoinPage
+👉 https://shasta.tronex.io/join/getJoinPage
 （领取 Test Coins 与 USDT Test Coins）
+
+若在 TronLink 的 **资产**页面暂时看不到测试 **TRX** 或测试 **USDT**，可在 **Shasta** 测试网的区块浏览器中用同一钱包地址查询余额与代币记录（例如 [shasta.tronscan.org](https://shasta.tronscan.org/)），通常比在钱包资产页更直观。
+
+![Shasta 测试网区块浏览器中查看测试代币示例](https://infini-public-assets.s3.ap-east-1.amazonaws.com/shasta_scan.png)
 
 #### **步骤 4：发起测试支付**
 
 进入 Infini 的测试环境收银台页面后：
 
-- 将钱包切换为 Nile Testnet
+- 将钱包切换为 Shasta Testnet
 - 选择支付方式：**USDT（Tron Testnet）**
 - 支付测试代币
 
@@ -119,7 +123,7 @@ Webhook 也会正常触发，可用于联调。
 
 请确认：
 
-- 钱包是否处于 **Nile Testnet**
+- 钱包是否处于 **Shasta Testnet**
 - 钱包里是否有 **USDT Test Coins**
 - 钱包是否有足够的 **TRX** 用于 Gas
 

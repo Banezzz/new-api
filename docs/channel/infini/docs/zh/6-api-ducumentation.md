@@ -1,5 +1,8 @@
 ## 6. API Documentation（托管收银台模式）
 
+> **推荐：** 您可以使用 [infini-skill](https://github.com/infini-money/infini-skill) 更快接入 Infini API。该 Skill 提供开箱即用的接入能力，可帮助您先完成托管收银台流程接入，再按需参考下方原始 API 文档。
+
+
 托管收银台模式是 Infini 最推荐的接入方式。商户只需创建订单、跳转 checkout_url 并处理 Webhook，即可完成支付集成。本章节仅包含托管收银台模式的 API 文档与对应字段说明。
 
 所有接口前缀：
@@ -33,7 +36,8 @@ Authorization: Signature ...
 | merchant_alias | string | 否 | 收银台账单名称（覆盖后台配置） |
 | success_url | string | 否 | 订单支付成功跳转回商户地址 |
 | failure_url | string | 否 | 订单支付失败跳转回商户地址 |
-| pay_methods | array of integers | 否 | 支付方式：[1] 加密货币，[2] 卡支付，[1,2] 两者都支持。默认使用商户配置 |
+| pay_methods | array of integers | 否 | 支付方式：[1] 加密货币，[2] 卡支付，[3] Binance Pay 支付，[5] Apple Pay，[6] Google Pay，[1,2,3,5,6] 全部都支持。默认使用商户配置 |
+| currency | string | 否 | 订单货币 (USD, EUR, KWR, GBP, SGD, JPY, AUD, HKD), 默认为USD |
 
 
 #### Response 示例
@@ -69,10 +73,8 @@ Authorization: Signature ...
 | `expired` | 已过期未支付 |
 
 
-##### 
-
 Webhook 事件
-Webhook 中的 `status` 字段和查询接口中的 ` pay_status` 一致。
+Webhook 中的 `status` 字段和查询接口中的  `pay_status` 一致。
 
 #### Response 示例
 
@@ -425,7 +427,275 @@ Authorization: Signature ...
 }
 ```
 
-### 6.9 Webhook（订单与订阅状态回调）
+### 6.9 企业卡（Card）
+
+企业卡相关接口用于为企业成员申请、查询及获取卡片信息。与本章其他商户 API 一致，均使用 **`/v1/acquiring`** 前缀。
+
+#### 卡片标识（重要）
+
+- 商户可用的卡片唯一标识为内部 **`id`**：`POST /v1/acquiring/card/apply` 成功响应中的 **`data.id`**、**`GET /v1/acquiring/card/list`** 各项的 **`cards[].id`**，以及 **`GET /v1/acquiring/card/status`** / **`POST /v1/acquiring/card/reveal`** 入参均应使用同一值。
+
+
+#### 认证与权限
+
+- 所有接口与商户 API 一致，使用 **HMAC-SHA256** 认证：携带 **`Date`**、有请求体时携带 **`Digest`**，以及带 **`keyId`** 的 **`Authorization`** 请求头，计算方式见 [章节 4：授权与安全机制](/docs/zh/4-authorization)。
+
+
+**API Key 权限：**
+
+| 权限 | 适用接口 |
+|  --- | --- |
+| `card.create` | `POST /v1/acquiring/card/apply`、`GET /v1/acquiring/card/list`、`GET /v1/acquiring/card/status` |
+| `card.reveal` | `POST /v1/acquiring/card/reveal` |
+
+
+> **IP 白名单：** 包含 `card.create` 或 `card.reveal` 权限的 API Key，必须在商户后台创建或更新时配置非空的 IP 白名单。
+
+
+#### 响应信封
+
+所有接口统一使用 `code` / `message` / `data` 信封，`code === 0` 表示业务成功，非零 `code` 表示错误，详情见 `message`。
+
+#### 6.9.1 申请企业卡（Apply Card）
+
+**POST** /v1/acquiring/card/apply
+
+为企业成员创建一张企业卡的申请 / 充值流程。
+
+- **所需权限：** `card.create`
+
+
+成功时 **`data.id`** 即为本套接口中的卡片内部标识（与列表、状态查询、Reveal 共用，见上文「卡片标识」）。
+
+##### Request Body
+
+| 字段 | 类型 | 必填 | 说明 |
+|  --- | --- | --- | --- |
+| product_id | integer | 是 | 后台配置的产品 ID（最小值 1） |
+| top_up_amount | string | 是 | 首次充值金额（小数字符串） |
+| token_type | string | 是 | 代币类型，例如 `USDT`、`USDC` |
+| user_email | string | 是 | 持卡人（企业成员）登录邮箱：须与本请求所用 **API Key**（`Authorization` 中的 `keyId`）所属商户组织下的账号一致 |
+| holder_name | string | 是 | 卡片印名 / 持卡人姓名 |
+| card_alias | string | 否 | 可选的卡片别名 |
+
+
+##### 请求示例
+
+
+```json
+{
+  "product_id": 1,
+  "top_up_amount": "100.00",
+  "token_type": "USDT",
+  "user_email": "jane@example.com",
+  "holder_name": "Jane Doe",
+  "card_alias": "Travel card"
+}
+```
+
+##### 响应示例
+
+
+```json
+{
+  "code": 0,
+  "message": "",
+  "data": {
+    "id": "a441831c-a5c7-4bed-8f61-793738afd5bc",
+    "status": "init",
+    "total_top_up_amount": "100.00",
+    "total_fee": "1.00",
+    "total_pay_amount": "101.00",
+    "message": ""
+  }
+}
+```
+
+##### 响应字段
+
+| 字段 | 类型 | 说明 |
+|  --- | --- | --- |
+| id | string | 卡片内部标识；与 **`GET /v1/acquiring/card/list`** → **`cards[].id`**、`GET /v1/acquiring/card/status`、`POST /v1/acquiring/card/reveal` 入参同源 |
+| status | string | 生命周期状态：`init`、`pending`、`active`、`suspend`、`deleted` |
+| total_top_up_amount | string | 总充值金额 |
+| total_fee | string | 总手续费 |
+| total_pay_amount | string | 用户实际支付总额 |
+| message | string | 可选的状态说明 |
+
+
+#### 6.9.2 查询企业卡列表（List Cards）
+
+**GET** /v1/acquiring/card/list
+
+按分页返回当前商户名下的企业卡列表。每项的 **`cards[].id`** 与申请、查询状态及 Reveal 入参同源。
+
+- **所需权限：** `card.create`
+
+
+##### 请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+|  --- | --- | --- | --- |
+| status | string | 否 | 按卡片状态过滤；多个值以英文逗号分隔，例如 `active,pending` |
+| card_alias | string | 否 | 按卡片别名过滤 |
+| page | integer | 否 | 页码，从 1 开始（默认 1） |
+| page_size | integer | 否 | 每页数量，1–100（默认 20） |
+
+
+##### 响应示例
+
+
+```json
+{
+  "code": 0,
+  "message": "",
+  "data": {
+    "cards": [
+      {
+        "id": "a441831c-a5c7-4bed-8f61-793738afd5bc",
+        "mask": "411111******1111",
+        "holder_name": "Jane Doe",
+        "card_alias": "Travel card",
+        "status": "active",
+        "currency": "USD",
+        "available_balance": "50.25",
+        "user_id": "usr_01HXYZ",
+        "created_at": 1714464000,
+        "updated_at": 1714550400
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+##### `data.cards[]` 字段
+
+| 字段 | 类型 | 说明 |
+|  --- | --- | --- |
+| id | string | 卡片内部标识（与申请、状态、Reveal 同源） |
+| mask | string | 脱敏卡号；未发卡或未激活前可能为空 |
+| holder_name | string | 持卡人姓名 |
+| card_alias | string | 卡片别名 |
+| status | string | 卡片状态 |
+| currency | string | 卡片币种 |
+| available_balance | string | 可用余额 |
+| user_id | string | 持卡人用户 ID |
+| created_at | integer (int64) | 创建时间，**Unix 秒** |
+| updated_at | integer (int64) | 更新时间，**Unix 秒** |
+
+
+#### 6.9.3 查询卡片状态（Get Card Status）
+
+**GET** `/v1/acquiring/card/status?id={id}`
+
+返回单张卡的生命周期状态及基础信息。申请提交后可用本接口轮询，直到 `status` 变为 `active`。
+
+- **所需权限：** `card.create`
+
+
+##### 请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+|  --- | --- | --- | --- |
+| id | string | 是 | 卡片内部 `id`，与 **`POST /v1/acquiring/card/apply`** 的 `data.id` 或列表 **`cards[].id`** 一致 |
+
+
+##### 响应示例（仍为 `pending` 时，`mask` 可能为空，`available_balance` 可能为 `0`）
+
+
+```json
+{
+  "code": 0,
+  "message": "",
+  "data": {
+    "id": "a441831c-a5c7-4bed-8f61-793738afd5bc",
+    "status": "pending",
+    "card_alias": "Travel card",
+    "mask": "",
+    "holder_name": "Jane Doe",
+    "currency": "USD",
+    "available_balance": "0",
+    "user_id": "usr_01HXYZ",
+    "created_at": 1714464000,
+    "updated_at": 1714464100
+  }
+}
+```
+
+##### 响应字段
+
+| 字段 | 类型 | 说明 |
+|  --- | --- | --- |
+| id | string | 请求的卡片内部 id（回显） |
+| status | string | `init` / `pending` / `active` / `suspend` / `deleted` |
+| card_alias | string | 卡片别名 |
+| mask | string | 脱敏卡号；未发卡完成前可为空 |
+| holder_name | string | 持卡人姓名 |
+| currency | string | 卡片币种 |
+| available_balance | string | 可用余额；未激活时可参考为 `0` |
+| user_id | string | 持卡人用户 ID |
+| created_at | integer (int64) | 创建时间，**Unix 秒** |
+| updated_at | integer (int64) | 更新时间，**Unix 秒** |
+
+
+#### 6.9.4 查询卡敏感信息（Reveal Card）
+
+**POST** /v1/acquiring/card/reveal
+
+返回完整卡号（PAN）、CVV 与有效期等**敏感信息**。请勿在客户端日志中输出或持久化保存这些数据。
+
+传入的 **`id`** 须为与本节「卡片标识」一致的内部标识。
+
+- **所需权限：** `card.reveal`
+
+
+##### Request Body
+
+| 字段 | 类型 | 必填 | 说明 |
+|  --- | --- | --- | --- |
+| id | string | 是 | **`POST /v1/acquiring/card/apply`** 的 `data.id`，或 **`GET /v1/acquiring/card/list`** 中 **`cards[].id`** |
+
+
+##### 请求示例
+
+
+```json
+{
+  "id": "a441831c-a5c7-4bed-8f61-793738afd5bc"
+}
+```
+
+##### 响应示例
+
+
+```json
+{
+  "code": 0,
+  "message": "",
+  "data": {
+    "card_number": "4111111111111111",
+    "cvv": "123",
+    "expiration_mmyy": "1228",
+    "card_currency": "USD"
+  }
+}
+```
+
+##### 响应字段
+
+| 字段 | 类型 | 说明 |
+|  --- | --- | --- |
+| card_number | string | 完整卡号（PAN） |
+| cvv | string | 卡片 CVV |
+| expiration_mmyy | string | 卡片有效期，**MMYY** 4 位字符（如 `1228` 表示 2028 年 12 月） |
+| card_currency | string | 卡片币种 |
+
+
+### 6.10 Webhook（订单与订阅状态回调）
 
 商户可在后台配置 Webhook 接收地址。订单或订阅状态变化时，Infini 会主动推送以下事件：
 
@@ -503,7 +773,7 @@ Authorization: Signature ...
 
 Webhook 验签方法请参考 **章节 4：授权与安全机制**。
 
-### 6.10 错误码（Error Codes）
+### 6.11 错误码（Error Codes）
 
 所有错误返回格式：
 
@@ -530,11 +800,11 @@ Webhook 验签方法请参考 **章节 4：授权与安全机制**。
 | 400 | 43002 | 订阅已取消 |
 
 
-### 6.11 Python 示例（托管收银台模式）
+### 6.12 Python 示例（托管收银台模式）
 
 以下示例展示完整流程：创建订单 → 跳转收银台 → Webhook → 重新签发 Token。
 
-#### 6.11.1 创建订单
+#### 6.12.1 创建订单
 
 
 ```python
@@ -575,7 +845,7 @@ response.raise_for_status()
 return response.json()
 ```
 
-#### 6.11.2 前端跳转到收银台
+#### 6.12.2 前端跳转到收银台
 
 
 ```python
@@ -585,7 +855,7 @@ order = create_order(amount = request.json['amount'])
 return {"checkout_url": order["checkout_url"]}
 ```
 
-#### 6.11.3 Webhook 回调处理
+#### 6.12.3 Webhook 回调处理
 
 
 ```python
@@ -603,7 +873,7 @@ mark_order_expired(event['order_id'])
 return {"status": "ok"}
 ```
 
-#### 6.11.4 重新签发收银台 Token
+#### 6.12.4 重新签发收银台 Token
 
 
 ```python

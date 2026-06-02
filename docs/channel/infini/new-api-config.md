@@ -242,16 +242,34 @@ Webhook Secret 的处理方式：
     "name": "Infini Card",
     "type": "infini:card",
     "pay_methods": [2]
+  },
+  {
+    "name": "Infini Binance Pay",
+    "type": "infini:binance-pay",
+    "pay_methods": [3]
+  },
+  {
+    "name": "Infini Apple Pay",
+    "type": "infini:apple-pay",
+    "pay_methods": [5]
+  },
+  {
+    "name": "Infini Google Pay",
+    "type": "infini:google-pay",
+    "pay_methods": [6]
   }
 ]
 ```
 
 含义：
 
-- `pay_methods` 省略或留空表示继承 Infini 商户后台配置，适合展示 Pay with Crypto、Binance Pay、Infini Business Pay 等后台已启用方式
+- `pay_methods` 省略或留空表示继承 Infini 商户后台配置，适合展示后台已启用的全部收银台支付方式
 - `pay_methods: [1]` 表示加密货币
 - `pay_methods: [2]` 表示卡支付
-- `pay_methods: [1, 2]` 表示仅按 Infini 当前 API 文档限制为加密货币和卡支付
+- `pay_methods: [3]` 表示 Binance Pay
+- `pay_methods: [5]` 表示 Apple Pay
+- `pay_methods: [6]` 表示 Google Pay
+- `pay_methods: [1, 2, 3, 5, 6]` 表示使用当前 Infini API 文档列出的全部托管收银台支付方式
 
 ## 6. 哪些配置是系统内完成，哪些是外部完成
 

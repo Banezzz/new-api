@@ -1,5 +1,8 @@
 ## 6. API Documentation (Hosted Checkout Mode)
 
+> **Recommended:** You can use [infini-skill](https://github.com/infini-money/infini-skill) to integrate with Infini APIs faster. The skill provides ready-to-use integration capabilities and can help you connect to the hosted checkout flow before implementing the raw APIs below.
+
+
 Hosted Checkout mode is Infini's most recommended integration method. Merchants only need to create orders, redirect to checkout_url, and handle Webhooks to complete payment integration. This chapter only contains API documentation and corresponding field descriptions for Hosted Checkout mode.
 
 All API prefix:
@@ -33,7 +36,8 @@ Authorization: Signature ...
 | merchant_alias | string | No | Merchant display name (overrides backend configuration) |
 | success_url | string | No | Redirect address after successful order payment |
 | failure_url | string | No | Redirect address after failed order payment |
-| pay_methods | array of integers | No | Payment modes: [1] crypto, [2] card, [1,2] both. Defaults to merchant config |
+| pay_methods | array of integers | No | Payment methods: [1] crypto, [2] card, [3] Binance Pay, [5] Apple Pay, [6] Google Pay, [1,2,3,5,6] all three are supported. Defaults to merchant config |
+| currency | string | No | Order currency (USD, EUR, KWR, GBP, SGD, JPY, AUD, HKD), default to USD |
 
 
 #### Response Example
@@ -68,8 +72,6 @@ Database stored field recording the order's processing status.
 | `partial_paid` | Partial payment expired |
 | `expired` | Expired without payment |
 
-
-##### 
 
 #### Response Example
 
@@ -406,7 +408,277 @@ Used to cancel an active subscription. The subscription remains usable until the
 }
 ```
 
-### 6.9 Webhook (Order & Subscription Status Callback)
+### 6.9 Card
+
+Card endpoints are used to apply for, list, and retrieve information for cards issued to your members. They use the same **`/v1/acquiring`** prefix as the other merchant APIs in this chapter.
+
+#### Card identifier (important)
+
+- The only card identifier merchants use is the internal **`id`**: **`data.id`** from **`POST /v1/acquiring/card/apply`**, **`cards[].id`** from **`GET /v1/acquiring/card/list`**, and the **`id`** you pass to **`GET /v1/acquiring/card/status`** / **`POST /v1/acquiring/card/reveal`** must all be the same value.
+
+
+#### Authentication and Permissions
+
+- All endpoints use the same HMAC-SHA256 authentication as the rest of the merchant API: **`Date`**, **`Digest`** (when the request has a body), and **`Authorization`** with **`keyId`** — see [Chapter 4: Authorization and Security Mechanisms](/docs/en/4-authorization).
+
+
+**API key permissions:**
+
+| Permission | Endpoints |
+|  --- | --- |
+| `card.create` | `POST /v1/acquiring/card/apply`, `GET /v1/acquiring/card/list`, `GET /v1/acquiring/card/status` |
+| `card.reveal` | `POST /v1/acquiring/card/reveal` |
+
+
+> **IP whitelist:** API keys that include `card.create` or `card.reveal` must be configured with a non-empty IP whitelist when created or updated in the merchant dashboard.
+
+
+#### Response Envelope
+
+All endpoints use the standard `code` / `message` / `data` envelope. Business success is indicated by `code === 0`; a non-zero `code` indicates an error and `message` carries the details.
+
+#### 6.9.1 Apply Card
+
+**POST** /v1/acquiring/card/apply
+
+Creates a card application / top-up flow for a member.
+
+- **Required permission:** `card.create`
+
+
+On success, **`data.id`** is your card’s internal **`id`** (shared with list, status, and reveal — see **Card identifier** above).
+
+##### Request Body
+
+| Field | Type | Required | Description |
+|  --- | --- | --- | --- |
+| product_id | integer | Yes | Product ID from backend configuration (minimum 1) |
+| top_up_amount | string | Yes | Initial top-up amount (decimal string) |
+| token_type | string | Yes | Token type, e.g. `USDT`, `USDC` |
+| user_email | string | Yes | Member login email; must belong to the merchant account tied to your **API key** (`keyId` in `Authorization`) |
+| holder_name | string | Yes | Name printed / held on the card |
+| card_alias | string | No | Optional nickname for the card |
+
+
+##### Request Example
+
+
+```json
+{
+  "product_id": 1,
+  "top_up_amount": "100.00",
+  "token_type": "USDT",
+  "user_email": "jane@example.com",
+  "holder_name": "Jane Doe",
+  "card_alias": "Travel card"
+}
+```
+
+##### Response Example
+
+
+```json
+{
+  "code": 0,
+  "message": "",
+  "data": {
+    "id": "a441831c-a5c7-4bed-8f61-793738afd5bc",
+    "status": "init",
+    "total_top_up_amount": "100.00",
+    "total_fee": "1.00",
+    "total_pay_amount": "101.00",
+    "message": ""
+  }
+}
+```
+
+##### Response Fields
+
+| Field | Type | Description |
+|  --- | --- | --- |
+| id | string | Internal card **`id`**; matches **`cards[].id`**, **`GET /v1/acquiring/card/status`**, and **`POST /v1/acquiring/card/reveal`** |
+| status | string | Lifecycle status: `init`, `pending`, `active`, `suspend`, `deleted` |
+| total_top_up_amount | string | Total top-up amount |
+| total_fee | string | Total fee |
+| total_pay_amount | string | Total amount the user pays |
+| message | string | Optional status message |
+
+
+#### 6.9.2 List Cards
+
+**GET** /v1/acquiring/card/list
+
+Returns a paginated list of cards for the merchant. Each **`cards[].id`** matches apply, card status polling, and reveal.
+
+- **Required permission:** `card.create`
+
+
+##### Query Parameters
+
+| Field | Type | Required | Description |
+|  --- | --- | --- | --- |
+| status | string | No | Filter by card status; comma-separate multiple values, e.g. `active,pending` |
+| card_alias | string | No | Filter by card alias |
+| page | integer | No | Page number, starting at 1 (default 1) |
+| page_size | integer | No | Items per page, 1–100 (default 20) |
+
+
+##### Response Example
+
+
+```json
+{
+  "code": 0,
+  "message": "",
+  "data": {
+    "cards": [
+      {
+        "id": "a441831c-a5c7-4bed-8f61-793738afd5bc",
+        "mask": "411111******1111",
+        "holder_name": "Jane Doe",
+        "card_alias": "Travel card",
+        "status": "active",
+        "currency": "USD",
+        "available_balance": "50.25",
+        "user_id": "usr_01HXYZ",
+        "created_at": 1714464000,
+        "updated_at": 1714550400
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+##### `data.cards[]` Fields
+
+| Field | Type | Description |
+|  --- | --- | --- |
+| id | string | Internal card **`id`** (same everywhere in this chapter) |
+| mask | string | Masked PAN; empty until issuance / activation is complete |
+| holder_name | string | Cardholder name |
+| card_alias | string | Card alias |
+| status | string | Card status |
+| currency | string | Card currency |
+| available_balance | string | Available balance |
+| user_id | string | Cardholder user ID |
+| created_at | integer (int64) | Created at, **Unix seconds** |
+| updated_at | integer (int64) | Updated at, **Unix seconds** |
+
+
+#### 6.9.3 Get Card Status
+
+**GET** `/v1/acquiring/card/status?id={id}`
+
+Returns lifecycle status and summary fields for one card. After **`POST /v1/acquiring/card/apply`**, poll until **`status`** becomes **`active`**.
+
+- **Required permission:** `card.create`
+
+
+##### Query parameters
+
+| Field | Type | Required | Description |
+|  --- | --- | --- | --- |
+| id | string | Yes | Internal card **`id`** — same as **`data.id`** from apply or **`cards[].id`** from the list |
+
+
+##### Response example
+
+While **`pending`**, **`mask`** may be empty and **`available_balance`** may read **`0`**.
+
+
+```json
+{
+  "code": 0,
+  "message": "",
+  "data": {
+    "id": "a441831c-a5c7-4bed-8f61-793738afd5bc",
+    "status": "pending",
+    "card_alias": "Travel card",
+    "mask": "",
+    "holder_name": "Jane Doe",
+    "currency": "USD",
+    "available_balance": "0",
+    "user_id": "usr_01HXYZ",
+    "created_at": 1714464000,
+    "updated_at": 1714464100
+  }
+}
+```
+
+##### Response fields
+
+| Field | Type | Description |
+|  --- | --- | --- |
+| id | string | Echoes the queried **`id`** |
+| status | string | **`init`** / **`pending`** / **`active`** / **`suspend`** / **`deleted`** |
+| card_alias | string | Optional card alias |
+| mask | string | Masked PAN; empty until issuance finishes |
+| holder_name | string | Cardholder name |
+| currency | string | Card currency |
+| available_balance | string | Available balance; may be **`0`** before activation |
+| user_id | string | Cardholder user ID |
+| created_at | integer (int64) | Created at, **Unix seconds** |
+| updated_at | integer (int64) | Updated at, **Unix seconds** |
+
+
+#### 6.9.4 Reveal Card
+
+**POST** /v1/acquiring/card/reveal
+
+Returns the full PAN, CVV, and expiry — **sensitive data**. Do not log or persist these values in client applications.
+
+The request body **`id`** must match the internal identifier described under **Card identifier**.
+
+- **Required permission:** `card.reveal`
+
+
+##### Request Body
+
+| Field | Type | Required | Description |
+|  --- | --- | --- | --- |
+| id | string | Yes | Same **`id`** as **`data.id`** from **`POST /v1/acquiring/card/apply`** or **`cards[].id`** from **`GET /v1/acquiring/card/list`**. |
+
+
+##### Request Example
+
+
+```json
+{
+  "id": "a441831c-a5c7-4bed-8f61-793738afd5bc"
+}
+```
+
+##### Response Example
+
+
+```json
+{
+  "code": 0,
+  "message": "",
+  "data": {
+    "card_number": "4111111111111111",
+    "cvv": "123",
+    "expiration_mmyy": "1228",
+    "card_currency": "USD"
+  }
+}
+```
+
+##### Response Fields
+
+| Field | Type | Description |
+|  --- | --- | --- |
+| card_number | string | Full PAN |
+| cvv | string | Card CVV |
+| expiration_mmyy | string | Expiration in **MMYY** (four characters), e.g. `1228` for December 2028 |
+| card_currency | string | Card currency |
+
+
+### 6.10 Webhook (Order & Subscription Status Callback)
 
 Merchants can configure Webhook receiving address in the backend. When order or subscription status changes, Infini will actively push the following events:
 
@@ -484,7 +756,7 @@ Merchants can configure Webhook receiving address in the backend. When order or 
 
 For Webhook signature verification methods, please refer to **Chapter 4: Authorization and Security Mechanisms**.
 
-### 6.10 Error Codes
+### 6.11 Error Codes
 
 All error response format:
 
@@ -511,11 +783,11 @@ All error response format:
 | 400 | 43002 | Subscription already canceled |
 
 
-### 6.11 Python Example (Hosted Checkout Mode)
+### 6.12 Python Example (Hosted Checkout Mode)
 
 The following example demonstrates the complete flow: Create Order → Redirect to Checkout → Webhook → Reissue Token.
 
-#### 6.11.1 Create Order
+#### 6.12.1 Create Order
 
 
 ```python
@@ -556,7 +828,7 @@ def create_order(amount):
     return response.json()
 ```
 
-#### 6.11.2 Frontend Redirect to Checkout
+#### 6.12.2 Frontend Redirect to Checkout
 
 
 ```python
@@ -566,7 +838,7 @@ def create_payment():
     return {"checkout_url": order["checkout_url"]}
 ```
 
-#### 6.11.3 Webhook Callback Handling
+#### 6.12.3 Webhook Callback Handling
 
 
 ```python
@@ -584,7 +856,7 @@ def handle_webhook():
     return {"status": "ok"}
 ```
 
-#### 6.11.4 Reissue Checkout Token
+#### 6.12.4 Reissue Checkout Token
 
 
 ```python
