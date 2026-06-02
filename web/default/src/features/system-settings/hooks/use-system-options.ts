@@ -31,10 +31,36 @@ type ParseResult<T> =
   | { success: true; value: T }
   | { success: false; error: string; fallback: T }
 
+function stringifyOptionValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  if (
+    typeof value === 'boolean' ||
+    typeof value === 'number' ||
+    typeof value === 'bigint'
+  ) {
+    return String(value)
+  }
+
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
 function parseOptionValueSafe<T>(
-  value: string,
+  rawValue: unknown,
   defaultValue: T
 ): ParseResult<T> {
+  const value = stringifyOptionValue(rawValue)
+
   if (typeof defaultValue === 'boolean') {
     return {
       success: true,
@@ -100,7 +126,7 @@ function parseOptionValueSafe<T>(
 
 export function getOptionValue<
   T extends Record<string, string | number | boolean | unknown[]>,
->(options: Array<{ key: string; value: string }> | undefined, defaults: T): T {
+>(options: Array<{ key: string; value: unknown }> | undefined, defaults: T): T {
   if (!options) return defaults
 
   const result = { ...defaults }
