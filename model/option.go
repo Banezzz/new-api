@@ -278,12 +278,20 @@ func UpdateOptionsBulk(values map[string]string) error {
 }
 
 func updateOptionMap(key string, value string) (err error) {
+	invalidatePricingAfterUnlock := false
 	common.OptionMapRWMutex.Lock()
-	defer common.OptionMapRWMutex.Unlock()
+	defer func() {
+		common.OptionMapRWMutex.Unlock()
+		if invalidatePricingAfterUnlock {
+			InvalidatePricingCache()
+			ratio_setting.InvalidateExposedDataCache()
+		}
+	}()
 	common.OptionMap[key] = value
 
 	// 检查是否是模型配置 - 使用更规范的方式处理
-	if handleConfigUpdate(key, value) {
+	if handled, invalidatePricing := handleConfigUpdate(key, value); handled {
+		invalidatePricingAfterUnlock = invalidatePricing
 		return nil // 已由配置系统处理
 	}
 
@@ -648,11 +656,11 @@ func updateOptionMap(key string, value string) (err error) {
 	return err
 }
 
-// handleConfigUpdate 处理分层配置更新，返回是否已处理
-func handleConfigUpdate(key, value string) bool {
+// handleConfigUpdate 处理分层配置更新，返回是否已处理，以及是否需要在释放 OptionMap 锁后刷新定价缓存。
+func handleConfigUpdate(key, value string) (bool, bool) {
 	parts := strings.SplitN(key, ".", 2)
 	if len(parts) != 2 {
-		return false // 不是分层配置
+		return false, false // 不是分层配置
 	}
 
 	configName := parts[0]
@@ -661,7 +669,7 @@ func handleConfigUpdate(key, value string) bool {
 	// 获取配置对象
 	cfg := config.GlobalConfig.Get(configName)
 	if cfg == nil {
-		return false // 未注册的配置
+		return false, false // 未注册的配置
 	}
 
 	// 更新配置
@@ -676,11 +684,10 @@ func handleConfigUpdate(key, value string) bool {
 	} else if configName == "tool_price_setting" {
 		operation_setting.RebuildToolPriceIndex()
 	} else if configName == "billing_setting" {
-		InvalidatePricingCache()
-		ratio_setting.InvalidateExposedDataCache()
+		return true, true
 	} else if configName == "theme" {
 		system_setting.UpdateAndSyncTheme()
 	}
 
-	return true // 已处理
+	return true, false // 已处理
 }
