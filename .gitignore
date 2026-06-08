@@ -14,6 +14,10 @@ web/node_modules
 web/classic/node_modules
 web/default/node_modules
 web/dist
+
+# Local site branding assets
+web/default/public/site-logo.png
+web/default/public/site-logo.svg
 .env
 .env.prod
 .env.production
