@@ -13,6 +13,12 @@ import (
 )
 
 func SetRouter(router *gin.Engine, assets ThemeAssets) {
+	healthHandler := func(c *gin.Context) {
+		c.Set(middleware.RouteTagKey, "health")
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	}
+	router.GET("/healthz", healthHandler)
+	router.HEAD("/healthz", healthHandler)
 	SetApiRouter(router)
 	SetDashboardRouter(router)
 	SetRelayRouter(router)

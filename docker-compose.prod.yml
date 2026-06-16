@@ -8,7 +8,7 @@
 #   docker compose --env-file .env.prod -f docker-compose.prod.yml build new-api
 #   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps new-api
 #   docker compose --env-file .env.prod -f docker-compose.prod.yml ps
-#   curl http://127.0.0.1:18900/api/status
+#   curl http://127.0.0.1:18900/healthz
 
 services:
   new-api:
@@ -37,9 +37,9 @@ services:
     networks:
       - new-api-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' || exit 1"]
+      test: ["CMD-SHELL", "wget -q -T 3 -t 1 --spider http://localhost:3000/healthz || exit 1"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
 
   redis:
