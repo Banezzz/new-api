@@ -124,6 +124,40 @@
         ]
       }
     },
+    "/healthz": {
+      "get": {
+        "summary": "健康检查",
+        "deprecated": false,
+        "description": "🔓 无需鉴权。用于容器健康检查、反向代理探针和发布切换检查；不要使用 /api/status 作为健康检查接口。",
+        "tags": [
+          "系统"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "head": {
+        "summary": "健康检查（HEAD）",
+        "deprecated": false,
+        "description": "🔓 无需鉴权。用于 Docker healthcheck 等只需要响应状态码的探针。",
+        "tags": [
+          "系统"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
     "/api/status": {
       "get": {
         "summary": "获取系统状态",

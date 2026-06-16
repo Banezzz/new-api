@@ -21,7 +21,7 @@
 docker compose --env-file .env.prod -f docker-compose.prod.yml build new-api
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps new-api
 docker compose --env-file .env.prod -f docker-compose.prod.yml ps
-curl http://127.0.0.1:18900/api/status
+curl http://127.0.0.1:18900/healthz
 ```
 
 这个方案的优点：
@@ -39,7 +39,18 @@ curl http://127.0.0.1:18900/api/status
 - 不是严格意义上的“无损热重载”
 - 如果容器切换时有正在进行中的流式响应，旧连接仍然可能被中断
 
-### 1.2 生产环境推荐的最佳实践
+### 1.2 健康检查接口约定
+
+当前项目的容器、反向代理和发布脚本应使用 `/healthz` 作为健康检查接口。
+
+`/api/status` 仍然保留，但它是面向前端和公开配置读取的业务状态接口，不应作为 Docker healthcheck、负载均衡探针或滚动发布切换依据。原因是 `/api/status` 会组装较多业务配置，未来也可能继续承载前端展示所需字段；健康探针需要尽量轻量、稳定、无业务依赖。
+
+建议分工：
+
+- `/healthz`：存活检查、容器健康检查、反向代理健康探针、发布切换前置检查
+- `/api/status`：前端启动配置、公开站点状态、发布后的业务层补充验收
+
+### 1.3 生产环境推荐的最佳实践
 
 如果你的目标是尽量不影响流式请求和 AI 对话，推荐方案是：
 
@@ -157,7 +168,7 @@ docker compose down && docker compose up -d
 docker compose --env-file .env.prod -f docker-compose.prod.yml build new-api
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps new-api
 docker compose --env-file .env.prod -f docker-compose.prod.yml ps
-curl http://127.0.0.1:18900/api/status
+curl http://127.0.0.1:18900/healthz
 ```
 
 ### 4.3 关键原则
@@ -246,7 +257,8 @@ docker compose build new-api
 至少检查：
 
 - 容器健康状态
-- `/api/status`
+- `/healthz`
+- `/api/status` 作为业务状态补充检查
 - 必要的鉴权与数据库连通
 
 4. 让代理开始把新请求分配给新实例
@@ -351,7 +363,7 @@ docker compose build new-api
 docker compose --env-file .env.prod -f docker-compose.prod.yml build new-api
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps new-api
 docker compose --env-file .env.prod -f docker-compose.prod.yml ps
-curl http://127.0.0.1:18900/api/status
+curl http://127.0.0.1:18900/healthz
 ```
 
 这套流程适合作为日常更新方式。
@@ -380,7 +392,8 @@ curl http://127.0.0.1:18900/api/status
 - 数据库和 Redis 不会在本次应用发布中被重建
 - Cloudflare Tunnel 配置保持不变
 - 对外端口保持不变
-- `/api/status` 能在切换后正常返回
+- `/healthz` 能在切换后正常返回
+- `/api/status` 能在切换后作为业务状态补充检查正常返回
 
 如果你使用双实例：
 
