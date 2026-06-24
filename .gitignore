@@ -44,3 +44,4 @@ new-api-server
 .test
 token_estimator_test.go
 skills-lock.json
+.playwright-mcp
