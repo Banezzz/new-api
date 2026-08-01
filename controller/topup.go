@@ -196,6 +196,13 @@ func GetEpayClient() *epay.Client {
 	return withUrl
 }
 
+// signEpayPurchaseParams adds Infrix's settlement currency before recalculating
+// the Epay signature. HashPay includes fiat in its signature verification.
+func signEpayPurchaseParams(params map[string]string, client *epay.Client) {
+	params["fiat"] = "USD"
+	epay.GenerateParams(params, client.Config.Key)
+}
+
 func getPayMoney(amount int64, group string) float64 {
 	dAmount := decimal.NewFromInt(amount)
 	// 充值金额以“展示类型”为准：
@@ -289,6 +296,7 @@ func RequestEpay(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起支付失败"})
 		return
 	}
+	signEpayPurchaseParams(params, client)
 	amount := req.Amount
 	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
 		dAmount := decimal.NewFromInt(int64(amount))
