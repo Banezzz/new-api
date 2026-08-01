@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetRouter(router *gin.Engine, assets ThemeAssets) {
+func SetRouter(router *gin.Engine, assets WebAssets) {
 	healthHandler := func(c *gin.Context) {
 		c.Set(middleware.RouteTagKey, "health")
 		c.JSON(http.StatusOK, gin.H{"success": true})

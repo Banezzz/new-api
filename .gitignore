@@ -8,16 +8,14 @@ upload
 build
 *.db-journal
 logs
-web/default/dist
-web/classic/dist
-web/node_modules
-web/classic/node_modules
-web/default/node_modules
 web/dist
+web/node_modules
+web/classic/dist
+web/classic/node_modules
 
 # Local site branding assets
-web/default/public/site-logo.png
-web/default/public/site-logo.svg
+web/public/site-logo.png
+web/public/site-logo.svg
 .env
 .env.prod
 .env.production
@@ -36,7 +34,7 @@ plans
 
 electron/node_modules
 electron/dist
-data/
+/data/
 .gomodcache/
 .gocache-temp
 .gopath
@@ -45,3 +43,10 @@ new-api-server
 token_estimator_test.go
 skills-lock.json
 .playwright-mcp
+
+# Local-only live probes and scratch test workspaces.
+.local-tests/
+service/relayconvert/chat_responses_live_local_test.go
+service/openaicompat/chat_responses_live_local_test.go
+go.work
+go.work.sum
